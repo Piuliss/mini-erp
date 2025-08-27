@@ -142,6 +142,232 @@ POST /api/users/login/
 Authorization: Bearer <access_token>
 ```
 
+## 🧪 Pruebas con cURL
+
+### Configuración Base
+```bash
+# URL base (ajusta según tu configuración)
+BASE_URL="http://localhost:8800"  # Docker Compose
+# BASE_URL="http://localhost:8000"  # Desarrollo local
+
+# Headers comunes
+HEADERS="-H 'Content-Type: application/json'"
+```
+
+### Autenticación
+```bash
+# 1. Login y obtener token
+TOKEN=$(curl -s -X POST $BASE_URL/api/users/users/login/ \
+  $HEADERS \
+  -d '{
+    "email": "admin@minierp.com",
+    "password": "test123456"
+  }' | jq -r '.access_token')
+
+echo "Token: $TOKEN"
+
+# 2. Verificar token
+curl -X GET $BASE_URL/api/users/users/profile/ \
+  $HEADERS \
+  -H "Authorization: Bearer $TOKEN"
+
+# 3. Logout
+curl -X POST $BASE_URL/api/users/users/logout/ \
+  $HEADERS \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"refresh_token": "your_refresh_token"}'
+```
+
+### Productos
+```bash
+# 1. Listar productos
+curl -X GET $BASE_URL/api/inventory/products/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN"
+
+# 2. Obtener un producto específico
+curl -X GET $BASE_URL/api/inventory/products/1/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN"
+
+# 3. Crear un producto
+curl -X POST $BASE_URL/api/inventory/products/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "name": "Nuevo Producto",
+    "description": "Descripción del producto",
+    "sku": "PROD-001",
+    "category": 1,
+    "price": "99.99",
+    "cost_price": "50.00",
+    "stock_quantity": 100,
+    "min_stock_level": 10,
+    "max_stock_level": 500
+  }'
+
+# 4. Productos con bajo stock
+curl -X GET $BASE_URL/api/inventory/products/low_stock/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Categorías
+```bash
+# 1. Listar categorías
+curl -X GET $BASE_URL/api/inventory/categories/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN"
+
+# 2. Crear categoría
+curl -X POST $BASE_URL/api/inventory/categories/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "name": "Nueva Categoría",
+    "description": "Descripción de la categoría"
+  }'
+```
+
+### Clientes
+```bash
+# 1. Listar clientes
+curl -X GET $BASE_URL/api/sales/customers/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN"
+
+# 2. Crear cliente
+curl -X POST $BASE_URL/api/sales/customers/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "name": "Juan Pérez",
+    "email": "juan@example.com",
+    "phone": "+1234567890",
+    "address": "Calle Principal 123"
+  }'
+```
+
+### Órdenes de Venta
+```bash
+# 1. Listar órdenes
+curl -X GET $BASE_URL/api/sales/orders/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN"
+
+# 2. Crear orden de venta
+curl -X POST $BASE_URL/api/sales/orders/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "customer": 1,
+    "order_date": "2024-01-15",
+    "delivery_date": "2024-01-20",
+    "notes": "Orden de prueba",
+    "items": [
+      {
+        "product": 1,
+        "quantity": 2,
+        "unit_price": "99.99"
+      }
+    ]
+  }'
+
+# 3. Confirmar orden
+curl -X POST $BASE_URL/api/sales/orders/1/confirm/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Reportes
+```bash
+# 1. Dashboard summary
+curl -X GET $BASE_URL/api/reports/dashboard_summary/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN"
+
+# 2. Reporte de ventas
+curl -X GET $BASE_URL/api/reports/sales_report/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN"
+
+# 3. Reporte de inventario
+curl -X GET $BASE_URL/api/reports/inventory_report/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Script de Prueba Completa
+```bash
+#!/bin/bash
+# Script para probar toda la API
+
+export BASE_URL="http://localhost:8800"
+
+echo "🔐 Iniciando pruebas de la API..."
+
+# Login
+echo "1. Login..."
+TOKEN=$(curl -s -X POST $BASE_URL/api/users/users/login/ \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "email": "admin@minierp.com",
+    "password": "test123456"
+  }' | jq -r '.access_token')
+
+if [ "$TOKEN" = "null" ] || [ -z "$TOKEN" ]; then
+    echo "❌ Error en login"
+    exit 1
+fi
+
+echo "✅ Login exitoso"
+
+# Probar endpoints
+echo "2. Probando productos..."
+curl -s -X GET $BASE_URL/api/inventory/products/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" | jq '.count'
+
+echo "3. Probando categorías..."
+curl -s -X GET $BASE_URL/api/inventory/categories/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" | jq '.count'
+
+echo "4. Probando clientes..."
+curl -s -X GET $BASE_URL/api/sales/customers/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" | jq '.count'
+
+echo "5. Probando reportes..."
+curl -s -X GET $BASE_URL/api/reports/dashboard_summary/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" | jq '.total_products'
+
+echo "✅ Todas las pruebas completadas"
+```
+
+### Notas Importantes
+- **Reemplaza `$TOKEN`** con el token obtenido del login
+- **Ajusta `$BASE_URL`** según tu configuración (8800 para Docker, 8000 para local)
+- **Instala `jq`** para mejor formato de respuesta: `brew install jq` (macOS) o `apt install jq` (Ubuntu)
+- **Los IDs** (como `/1/`) pueden variar según los datos existentes
+- **Credenciales de prueba**: 
+  - **Email**: `admin@minierp.com`
+  - **Password**: `test123456`
+- **Verificar usuarios disponibles**: Si las credenciales no funcionan, verifica que los datos de prueba se hayan cargado
+- **URLs corregidas**: Todas las URLs en los ejemplos están actualizadas para funcionar correctamente
+
+### Verificar Usuarios Disponibles
+```bash
+# Listar usuarios (requiere autenticación de admin)
+curl -X GET $BASE_URL/api/users/users/ \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" | jq '.results[] | {id, username, email}'
+
+# O crear un superusuario si no hay datos
+python manage.py createsuperuser
+```
+
 ## 📚 Endpoints Principales
 
 ### Usuarios y Autenticación
@@ -267,17 +493,68 @@ La documentación completa está disponible en:
 
 ## 🧪 Testing
 
+### Tests Unitarios
 ```bash
-# Ejecutar tests
+# Ejecutar todos los tests
 python manage.py test
 
-# Tests específicos
+# Tests específicos por módulo
 python manage.py test users
 python manage.py test inventory
 python manage.py test sales
 python manage.py test purchases
 python manage.py test reports
+
+# Tests con SQLite (para desarrollo)
+USE_POSTGRES=False python manage.py test
 ```
+
+### Tests End-to-End
+```bash
+# Ejecutar tests E2E
+python manage.py test tests_e2e
+
+# Tests E2E específicos
+python manage.py test tests_e2e.test_authentication
+```
+
+### Tests con Docker
+```bash
+# Construir imagen
+docker build -t mini-erp .
+
+# Ejecutar tests en contenedor
+docker run --rm mini-erp python manage.py test
+
+# Tests con Docker Compose
+docker compose build
+docker compose up -d
+docker compose exec web python manage.py test
+docker compose down
+```
+
+### Cobertura de Tests
+- **66 tests unitarios** cubriendo todos los modelos
+- **10 tests E2E** probando endpoints de autenticación
+- **Validación de datos** y lógica de negocio
+- **Tests de integración** con base de datos
+
+## 🔄 CI/CD
+
+El proyecto incluye GitHub Actions workflows para automatizar testing:
+
+### Workflows Disponibles
+- **`.github/workflows/tests.yml`**: Tests unitarios y E2E con PostgreSQL
+- **`.github/workflows/docker-compose.yml`**: Tests con Docker Compose
+
+### Triggers
+- Push a `main` y `develop`
+- Pull Requests a `main` y `develop`
+
+### Jobs
+1. **Test**: Ejecuta tests unitarios y E2E con PostgreSQL
+2. **Docker Test**: Construye y prueba la imagen Docker
+3. **Docker Compose Test**: Prueba el stack completo con Docker Compose
 
 ## 🆘 Comandos Útiles
 
