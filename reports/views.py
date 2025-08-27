@@ -8,7 +8,7 @@ from datetime import timedelta, datetime
 from users.models import User
 from inventory.models import Product, Category, StockMovement
 from sales.models import SaleOrder, Customer, Invoice
-from purchases.models import PurchaseOrder, Supplier, PurchaseInvoice
+from purchases.models import Supplier, PurchaseInvoice
 
 
 class ReportViewSet(viewsets.ViewSet):
@@ -37,14 +37,13 @@ class ReportViewSet(viewsets.ViewSet):
         ).aggregate(total=Sum('total_amount'))['total'] or 0
         
         # Purchase statistics
-        total_purchases = PurchaseOrder.objects.filter(status='received').aggregate(
-            total=Sum('total_amount')
+        total_purchases = PurchaseInvoice.objects.aggregate(
+            total=Sum('amount')
         )['total'] or 0
         
-        this_month_purchases = PurchaseOrder.objects.filter(
-            status='received',
-            order_date__gte=this_month
-        ).aggregate(total=Sum('total_amount'))['total'] or 0
+        this_month_purchases = PurchaseInvoice.objects.filter(
+            invoice_date__gte=this_month
+        ).aggregate(total=Sum('amount'))['total'] or 0
         
         # Inventory statistics
         total_products = Product.objects.filter(is_active=True).count()
@@ -63,7 +62,7 @@ class ReportViewSet(viewsets.ViewSet):
         
         # Recent activities
         recent_sales = SaleOrder.objects.all().order_by('-created_at')[:5]
-        recent_purchases = PurchaseOrder.objects.all().order_by('-created_at')[:5]
+        recent_purchases = PurchaseInvoice.objects.all().order_by('-created_at')[:5]
         
         return Response({
             'sales': {
@@ -83,9 +82,9 @@ class ReportViewSet(viewsets.ViewSet):
                 'this_month_purchases': float(this_month_purchases),
                 'recent_purchases': [
                     {
-                        'order_number': purchase.order_number,
+                        'invoice_number': purchase.invoice_number,
                         'supplier': purchase.supplier.name,
-                        'total_amount': float(purchase.total_amount),
+                        'amount': float(purchase.amount),
                         'status': purchase.status
                     } for purchase in recent_purchases
                 ]
@@ -225,13 +224,13 @@ class ReportViewSet(viewsets.ViewSet):
         total_revenue = sales_queryset.aggregate(total=Sum('total_amount'))['total'] or 0
         
         # Purchase costs
-        purchase_queryset = PurchaseOrder.objects.filter(status='received')
+        purchase_queryset = PurchaseInvoice.objects.all()
         if start_date:
-            purchase_queryset = purchase_queryset.filter(order_date__gte=start_date)
+            purchase_queryset = purchase_queryset.filter(invoice_date__gte=start_date)
         if end_date:
-            purchase_queryset = purchase_queryset.filter(order_date__lte=end_date)
+            purchase_queryset = purchase_queryset.filter(invoice_date__lte=end_date)
         
-        total_costs = purchase_queryset.aggregate(total=Sum('total_amount'))['total'] or 0
+        total_costs = purchase_queryset.aggregate(total=Sum('amount'))['total'] or 0
         
         # Inventory value
         inventory_value = Product.objects.filter(is_active=True).aggregate(
@@ -309,13 +308,13 @@ class ReportViewSet(viewsets.ViewSet):
         """
         # Top suppliers by purchases
         top_suppliers = Supplier.objects.filter(is_active=True).annotate(
-            total_purchases=Sum('orders__total_amount'),
-            order_count=Count('orders')
+            total_purchases=Sum('invoices__amount'),
+            invoice_count=Count('invoices')
         ).filter(total_purchases__isnull=False).order_by('-total_purchases')[:20]
         
         # Supplier activity
         active_suppliers = Supplier.objects.filter(
-            orders__created_at__gte=timezone.now() - timedelta(days=30)
+            invoices__created_at__gte=timezone.now() - timedelta(days=30)
         ).distinct().count()
         
         total_suppliers = Supplier.objects.filter(is_active=True).count()
@@ -325,13 +324,13 @@ class ReportViewSet(viewsets.ViewSet):
                 'total_suppliers': total_suppliers,
                 'active_suppliers': active_suppliers
             },
-            'top_suppliers': [
-                {
-                    'id': supplier.id,
-                    'name': supplier.name,
-                    'email': supplier.email,
-                    'total_purchases': float(supplier.total_purchases or 0),
-                    'order_count': supplier.order_count
-                } for supplier in top_suppliers
-            ]
+                            'top_suppliers': [
+                    {
+                        'id': supplier.id,
+                        'name': supplier.name,
+                        'email': supplier.email,
+                        'total_purchases': float(supplier.total_purchases or 0),
+                        'invoice_count': supplier.invoice_count
+                    } for supplier in top_suppliers
+                ]
         })

@@ -77,7 +77,7 @@ class SaleOrderViewSet(viewsets.ModelViewSet):
         return SaleOrderSerializer
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        serializer.save()
 
     @action(detail=True, methods=['post'])
     def confirm(self, request, pk=None):
@@ -85,14 +85,19 @@ class SaleOrderViewSet(viewsets.ModelViewSet):
         Confirm a sale order
         """
         order = self.get_object()
-        if order.status == 'draft':
-            order.status = 'confirmed'
-            order.save()
+        try:
+            order.confirm()
             return Response({'message': 'Order confirmed successfully'})
-        return Response(
-            {'error': 'Order cannot be confirmed'}, 
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        except ValueError as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {'error': 'Order cannot be confirmed'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(detail=True, methods=['post'])
     def ship(self, request, pk=None):

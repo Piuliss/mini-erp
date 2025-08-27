@@ -715,3 +715,183 @@ python manage.py migrate
 - **Seguridad**: Genera SECRET_KEYs únicos para cada entorno
 
 **¡Disfruta desarrollando tu frontend con este Mini ERP! 🚀**
+
+## 🚀 Despliegue en Producción
+
+### Docker Hub y GitHub Actions
+
+Para desplegar en producción usando Docker Hub, sigue estos pasos:
+
+#### 1. Configurar GitHub Actions para Docker Hub
+
+Crea el archivo `.github/workflows/docker-publish.yml`:
+
+```yaml
+name: Docker Build and Push
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: honeyjack/mini-erp
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+```
+
+#### 2. Configurar Secrets en GitHub
+
+Ve a tu repositorio en GitHub → Settings → Secrets and variables → Actions y agrega:
+
+- `DOCKER_USERNAME`: Tu usuario de Docker Hub (honeyjack)
+- `DOCKER_PASSWORD`: Tu token de acceso de Docker Hub
+
+#### 3. Comandos de Producción
+
+```bash
+# Desplegar en producción usando la imagen de Docker Hub
+docker run -d \
+  --name mini-erp-prod \
+  -p 80:8000 \
+  -e DATABASE_URL=postgresql://user:pass@host:5432/dbname \
+  -e SECRET_KEY=your-production-secret-key \
+  -e DEBUG=False \
+  honeyjack/mini-erp:latest
+
+# Usar Docker Compose en producción
+docker-compose -f docker-compose.prod.yml up -d
+
+# Verificar logs
+docker logs mini-erp-prod
+
+# Escalar la aplicación
+docker-compose -f docker-compose.prod.yml up -d --scale web=3
+```
+
+#### 4. Docker Compose para Producción
+
+Crea `docker-compose.prod.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  web:
+    image: honeyjack/mini-erp:latest
+    ports:
+      - "80:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:pass@host:5432/dbname
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=False
+      - ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=minierp_prod
+      - POSTGRES_USER=minierp_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+```
+
+#### 5. Variables de Entorno para Producción
+
+Crea un archivo `.env.prod`:
+
+```bash
+# Base de datos
+DATABASE_URL=postgresql://minierp_user:your_secure_password@db:5432/minierp_prod
+DB_PASSWORD=your_secure_password
+
+# Django
+SECRET_KEY=your-production-secret-key-here
+DEBUG=False
+ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+
+# CORS
+CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+```
+
+#### 6. Comandos de Despliegue
+
+```bash
+# Hacer push de una nueva versión
+git tag v1.0.0
+git push origin v1.0.0
+
+# Desplegar en servidor de producción
+ssh your-server "cd /opt/mini-erp && docker-compose -f docker-compose.prod.yml pull && docker-compose -f docker-compose.prod.yml up -d"
+
+# Verificar el estado
+ssh your-server "cd /opt/mini-erp && docker-compose -f docker-compose.prod.yml ps"
+```
+
+### Monitoreo y Logs
+
+```bash
+# Ver logs en tiempo real
+docker logs -f mini-erp-prod
+
+# Ver logs de los últimos 100 líneas
+docker logs --tail 100 mini-erp-prod
+
+# Ver estadísticas del contenedor
+docker stats mini-erp-prod
+
+# Backup de la base de datos
+docker exec mini-erp-db pg_dump -U minierp_user minierp_prod > backup_$(date +%Y%m%d_%H%M%S).sql
+```

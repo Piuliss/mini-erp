@@ -1,6 +1,5 @@
 from django.db import models
 from decimal import Decimal
-from users.models import User
 from inventory.models import Product
 
 
@@ -9,9 +8,9 @@ class Supplier(models.Model):
     Supplier model
     """
     name = models.CharField(max_length=200)
-    email = models.EmailField(blank=True)
-    phone = models.CharField(max_length=20, blank=True)
-    address = models.TextField(blank=True)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20)
+    address = models.TextField()
     contact_person = models.CharField(max_length=100, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -24,98 +23,15 @@ class Supplier(models.Model):
         return self.name
 
 
-class PurchaseOrder(models.Model):
-    """
-    Purchase order model
-    """
-    STATUS_CHOICES = [
-        ('draft', 'Draft'),
-        ('sent', 'Sent to Supplier'),
-        ('confirmed', 'Confirmed'),
-        ('received', 'Received'),
-        ('cancelled', 'Cancelled'),
-    ]
-
-    order_number = models.CharField(max_length=20, unique=True)
-    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='orders')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    order_date = models.DateField()
-    expected_delivery = models.DateField()
-    delivery_date = models.DateField(null=True, blank=True)
-    subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    notes = models.TextField(blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_purchases')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'purchase_orders'
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return f"PO-{self.order_number}"
-
-    def save(self, *args, **kwargs):
-        if not self.order_number:
-            # Generate order number
-            last_order = PurchaseOrder.objects.order_by('-id').first()
-            if last_order:
-                last_number = int(last_order.order_number.split('-')[1])
-                self.order_number = f"PO-{last_number + 1:06d}"
-            else:
-                self.order_number = "PO-000001"
-        super().save(*args, **kwargs)
-
-    def calculate_totals(self):
-        """Calculate order totals"""
-        subtotal = sum(item.total_price for item in self.items.all())
-        self.subtotal = subtotal
-        self.tax_amount = subtotal * Decimal('0.10')  # 10% tax
-        self.total_amount = self.subtotal + self.tax_amount
-        self.save()
-
-
-class PurchaseOrderItem(models.Model):
-    """
-    Purchase order item model
-    """
-    order = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name='items')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.IntegerField()
-    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
-    total_price = models.DecimalField(max_digits=10, decimal_places=2)
-    received_quantity = models.IntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = 'purchase_order_items'
-
-    def __str__(self):
-        return f"{self.product.name} - {self.quantity}"
-
-    def save(self, *args, **kwargs):
-        self.total_price = self.quantity * self.unit_price
-        super().save(*args, **kwargs)
-        
-        # Update order totals
-        self.order.calculate_totals()
-
-    @property
-    def remaining_quantity(self):
-        return self.quantity - self.received_quantity
-
-
 class PurchaseInvoice(models.Model):
     """
     Purchase invoice model
     """
     invoice_number = models.CharField(max_length=20, unique=True)
-    purchase_order = models.OneToOneField(PurchaseOrder, on_delete=models.CASCADE, related_name='invoice')
+    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='invoices')
     invoice_date = models.DateField()
     due_date = models.DateField()
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     paid_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=[
         ('pending', 'Pending'),
@@ -123,6 +39,7 @@ class PurchaseInvoice(models.Model):
         ('paid', 'Paid'),
         ('overdue', 'Overdue'),
     ], default='pending')
+    notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -130,7 +47,7 @@ class PurchaseInvoice(models.Model):
         db_table = 'purchase_invoices'
 
     def __str__(self):
-        return f"PINV-{self.invoice_number}"
+        return self.invoice_number
 
     def save(self, *args, **kwargs):
         if not self.invoice_number:
@@ -145,6 +62,8 @@ class PurchaseInvoice(models.Model):
 
     @property
     def balance(self):
+        if self.amount is None:
+            return Decimal('0.00') - self.paid_amount
         return self.amount - self.paid_amount
     
     def update_status(self):
@@ -156,3 +75,35 @@ class PurchaseInvoice(models.Model):
         else:
             self.status = 'pending'
         self.save()
+
+
+class PurchaseInvoiceItem(models.Model):
+    """
+    Purchase invoice item model
+    """
+    invoice = models.ForeignKey(PurchaseInvoice, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.IntegerField()
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'purchase_invoice_items'
+
+    def __str__(self):
+        return f"{self.product.name} - {self.quantity}"
+
+    def save(self, *args, **kwargs):
+        self.total_price = self.quantity * self.unit_price
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        # Update invoice amount
+        self.invoice.amount = sum(item.total_price for item in self.invoice.items.all())
+        self.invoice.save()
+        
+        # Update product stock only on creation
+        if is_new:
+            self.product.stock_quantity += self.quantity
+            self.product.save()

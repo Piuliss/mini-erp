@@ -73,6 +73,23 @@ class SaleOrder(models.Model):
         self.tax_amount = subtotal * Decimal('0.10')  # 10% tax
         self.total_amount = self.subtotal + self.tax_amount
         self.save()
+    
+    def confirm(self):
+        """Confirm order and update stock"""
+        if self.status == 'draft':
+            # Check if we have enough stock for all items
+            for item in self.items.all():
+                if item.product.stock_quantity < item.quantity:
+                    raise ValueError(f"Insufficient stock for {item.product.name}. Available: {item.product.stock_quantity}, Required: {item.quantity}")
+            
+            # Update stock for all items
+            for item in self.items.all():
+                item.product.stock_quantity -= item.quantity
+                item.product.save()
+            
+            # Update order status
+            self.status = 'confirmed'
+            self.save()
 
 
 class SaleOrderItem(models.Model):

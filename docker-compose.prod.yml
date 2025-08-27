@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  web:
+    image: honeyjack/mini-erp:latest
+    ports:
+      - "80:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:pass@host:5432/dbname
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=False
+      - ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=minierp_prod
+      - POSTGRES_USER=minierp_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

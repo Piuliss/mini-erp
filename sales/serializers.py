@@ -72,8 +72,9 @@ class SaleOrderCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = SaleOrder
         fields = [
-            'customer_id', 'order_date', 'delivery_date', 'notes', 'items'
+            'id', 'customer_id', 'order_date', 'delivery_date', 'notes', 'items'
         ]
+        read_only_fields = ['id']
 
     def create(self, validated_data):
         items_data = validated_data.pop('items')
@@ -88,8 +89,10 @@ class SaleOrderCreateSerializer(serializers.ModelSerializer):
         
         # Create order items
         for item_data in items_data:
+            product_id = item_data.pop('product')
             SaleOrderItem.objects.create(
                 order=sale_order,
+                product_id=product_id,
                 **item_data
             )
         
