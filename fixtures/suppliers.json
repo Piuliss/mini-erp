@@ -1,0 +1,72 @@
+[
+    {
+        "model": "purchases.supplier",
+        "pk": 1,
+        "fields": {
+            "name": "Tech Solutions Inc",
+            "email": "sales@techsolutions.com",
+            "phone": "+1987654321",
+            "address": "100 Tech Street, Silicon Valley, CA 94025",
+            "contact_person": "Alex Chen",
+            "is_active": true,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "purchases.supplier",
+        "pk": 2,
+        "fields": {
+            "name": "Fashion Forward Ltd",
+            "email": "orders@fashionforward.com",
+            "phone": "+1987654322",
+            "address": "200 Fashion Ave, New York, NY 10001",
+            "contact_person": "Maria Rodriguez",
+            "is_active": true,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "purchases.supplier",
+        "pk": 3,
+        "fields": {
+            "name": "Book World Publishers",
+            "email": "purchasing@bookworld.com",
+            "phone": "+1987654323",
+            "address": "300 Library Lane, Boston, MA 02101",
+            "contact_person": "Robert Wilson",
+            "is_active": true,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "purchases.supplier",
+        "pk": 4,
+        "fields": {
+            "name": "Home & Garden Supply Co",
+            "email": "orders@homegarden.com",
+            "phone": "+1987654324",
+            "address": "400 Garden Road, Portland, OR 97201",
+            "contact_person": "Lisa Thompson",
+            "is_active": true,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "purchases.supplier",
+        "pk": 5,
+        "fields": {
+            "name": "Sports Equipment Pro",
+            "email": "sales@sportsequipment.com",
+            "phone": "+1987654325",
+            "address": "500 Sports Blvd, Denver, CO 80201",
+            "contact_person": "Tom Anderson",
+            "is_active": true,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    }
+]

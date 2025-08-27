@@ -1,0 +1,52 @@
+[
+    {
+        "model": "inventory.category",
+        "pk": 1,
+        "fields": {
+            "name": "Electronics",
+            "description": "Electronic devices and accessories",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "inventory.category",
+        "pk": 2,
+        "fields": {
+            "name": "Clothing",
+            "description": "Apparel and fashion items",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "inventory.category",
+        "pk": 3,
+        "fields": {
+            "name": "Books",
+            "description": "Books and publications",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "inventory.category",
+        "pk": 4,
+        "fields": {
+            "name": "Home & Garden",
+            "description": "Home improvement and garden supplies",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "inventory.category",
+        "pk": 5,
+        "fields": {
+            "name": "Sports",
+            "description": "Sports equipment and accessories",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    }
+]

@@ -1,0 +1,67 @@
+[
+    {
+        "model": "sales.customer",
+        "pk": 1,
+        "fields": {
+            "name": "John Smith",
+            "email": "john.smith@email.com",
+            "phone": "+1234567890",
+            "address": "123 Main Street, New York, NY 10001",
+            "is_active": true,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "sales.customer",
+        "pk": 2,
+        "fields": {
+            "name": "Sarah Johnson",
+            "email": "sarah.johnson@email.com",
+            "phone": "+1234567891",
+            "address": "456 Oak Avenue, Los Angeles, CA 90210",
+            "is_active": true,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "sales.customer",
+        "pk": 3,
+        "fields": {
+            "name": "Mike Davis",
+            "email": "mike.davis@email.com",
+            "phone": "+1234567892",
+            "address": "789 Pine Road, Chicago, IL 60601",
+            "is_active": true,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "sales.customer",
+        "pk": 4,
+        "fields": {
+            "name": "Emily Wilson",
+            "email": "emily.wilson@email.com",
+            "phone": "+1234567893",
+            "address": "321 Elm Street, Houston, TX 77001",
+            "is_active": true,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "sales.customer",
+        "pk": 5,
+        "fields": {
+            "name": "David Brown",
+            "email": "david.brown@email.com",
+            "phone": "+1234567894",
+            "address": "654 Maple Drive, Phoenix, AZ 85001",
+            "is_active": true,
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z"
+        }
+    }
+]
