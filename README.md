@@ -147,12 +147,12 @@ Authorization: Bearer <access_token>
 ### Configuración Base
 ```bash
 # URL base (ajusta según tu configuración)
-BASE_URL="http://localhost:8800"  # Docker Compose
-# BASE_URL="http://localhost:8000"  # Desarrollo local
-# BASE_URL="http://185.218.124.154:8800"  # Producción
+#BASE_URL="http://localhost:8800"  # Docker Compose
+# BASE_URL="http://localhost:8000"  # Desarrollo local dentro del docker
+BASE_URL="http://185.218.124.154:8800"  # Producción
 
 # Headers comunes
-HEADERS=""
+HEADERS="-H 'Content-Type: application/json'"
 ```
 
 ## 🚀 Comandos de Producción
@@ -283,7 +283,7 @@ cp .env.prod .env.prod.backup.$(date +%Y%m%d_%H%M%S)
 ```bash
 # 1. Login y obtener token
 TOKEN=$(curl -s -X POST $BASE_URL/api/users/users/login/ \
-  $HEADERS \
+  -H 'Content-Type: application/json' \
   -d '{
     "email": "admin@minierp.com",
     "password": "test123456"
@@ -293,12 +293,12 @@ echo "Token: $TOKEN"
 
 # 2. Verificar token
 curl -X GET $BASE_URL/api/users/users/profile/ \
-  $HEADERS \
+  -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN"
 
 # 3. Logout
 curl -X POST $BASE_URL/api/users/users/logout/ \
-  $HEADERS \
+  -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"refresh_token": "your_refresh_token"}'
 ```
