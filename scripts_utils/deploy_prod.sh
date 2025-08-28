@@ -53,37 +53,34 @@ if [ ! -f ".env.prod" ]; then
     echo "✅ Archivo .env.prod generado exitosamente"
 fi
 
-# Cargar variables de entorno de forma segura
-echo "📋 Cargando variables de entorno..."
+# Verificar que el archivo .env.prod existe y tiene las variables necesarias
+echo "📋 Verificando archivo .env.prod..."
 
-# Función para leer variable del archivo .env.prod
-get_env_var() {
+# Función para verificar variable en el archivo .env.prod
+check_env_var() {
     local var_name=$1
-    local var_line=$(grep "^${var_name}=" .env.prod | head -1)
-    if [ -n "$var_line" ]; then
-        echo "${var_line#*=}" | tr -d '\r' | tr -d '"' | tr -d "'"
+    if grep -q "^${var_name}=" .env.prod; then
+        local var_value=$(grep "^${var_name}=" .env.prod | head -1 | cut -d'=' -f2- | tr -d '\r' | tr -d '"' | tr -d "'")
+        if [ -n "$var_value" ] && [ "$var_value" != "your_secure_password" ] && [ "$var_value" != "your-production-secret-key-here" ]; then
+            echo "✅ $var_name configurada correctamente"
+            return 0
+        else
+            echo "❌ Error: Variable $var_name tiene valor por defecto o está vacía"
+            return 1
+        fi
+    else
+        echo "❌ Error: Variable $var_name no está definida en .env.prod"
+        return 1
     fi
 }
 
-# Leer variables críticas
-DATABASE_URL=$(get_env_var "DATABASE_URL")
-SECRET_KEY=$(get_env_var "SECRET_KEY")
-DB_PASSWORD=$(get_env_var "DB_PASSWORD")
-DEBUG=$(get_env_var "DEBUG")
-ALLOWED_HOSTS=$(get_env_var "ALLOWED_HOSTS")
-CORS_ALLOWED_ORIGINS=$(get_env_var "CORS_ALLOWED_ORIGINS")
-
-# Verificar que las variables necesarias están definidas
+# Verificar variables críticas
 required_vars=("DATABASE_URL" "SECRET_KEY" "DB_PASSWORD" "DEBUG" "ALLOWED_HOSTS")
 for var in "${required_vars[@]}"; do
-    var_value="${!var}"
-    if [ -z "$var_value" ]; then
-        echo "❌ Error: Variable $var no está definida en .env.prod"
-        exit 1
-    fi
+    check_env_var "$var" || exit 1
 done
 
-echo "✅ Variables de entorno cargadas correctamente"
+echo "✅ Archivo .env.prod verificado correctamente"
 
 # Detener contenedores existentes si están corriendo
 echo "🛑 Deteniendo contenedores existentes..."

@@ -5,12 +5,8 @@ services:
     image: honeyjack/mini-erp:latest
     ports:
       - "8800:8000"
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - SECRET_KEY=${SECRET_KEY}
-      - DEBUG=${DEBUG}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+    env_file:
+      - .env.prod
     depends_on:
       - db
     restart: unless-stopped

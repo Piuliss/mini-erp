@@ -51,22 +51,14 @@ jobs:
             echo "🔧 Configurando scripts..."
             chmod +x scripts_utils/deploy_prod.sh
             chmod +x scripts_utils/setup_prod_env.py
-            chmod +x scripts_utils/verify_prod_setup.sh
             
             # Ejecutar deploy automatizado (incluye verificación y generación de .env.prod)
             echo "🚀 Ejecutando deploy automatizado..."
             ./scripts_utils/deploy_prod.sh
             
-            # Hacer el script de verificación ejecutable
-            chmod +x scripts_utils/check_deploy.sh
-            
             # Verificar estado final
             echo "📊 Estado final de los contenedores:"
             docker compose -f docker-compose.prod.yml ps
-            
-            # Verificar que el deploy fue exitoso
-            echo "🔍 Verificando estado del deploy..."
-            ./scripts_utils/check_deploy.sh
             
             # Limpiar imágenes viejas
             echo "🧹 Limpiando imágenes antiguas..."
