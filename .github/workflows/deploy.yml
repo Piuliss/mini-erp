@@ -13,73 +13,62 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     environment: production
+    timeout-minutes: 15
     
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
       - name: Check workflow status
         run: |
           echo "✅ CI/CD Pipeline completed successfully"
           echo "🚀 Starting deployment to production..."
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "👤 Triggered by: ${{ github.actor }}"
       
       - name: Deploy to production server
-        run: |
-          # Configurar SSH para conectar al servidor
-          mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          chmod 700 ~/.ssh
-          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
-          
-          # Verificar configuración SSH
-          echo "🔍 Verificando configuración SSH..."
-          ls -la ~/.ssh/
-          echo "🔑 Verificando clave SSH..."
-          ssh-keygen -l -f ~/.ssh/id_rsa || echo "❌ Error en formato de clave SSH"
-          
-          # Ejecutar deploy con más verbosidad
-          echo "🚀 Conectando al servidor..."
-          ssh -v -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null deploy@${{ secrets.SERVER_IP }} << 'EOF'
+        uses: appleboy/ssh-action@v1.0.1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: deploy
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          timeout: 300s
+          command_timeout: 60s
+          script: |
             set -e
-            echo "🚀 Iniciando deploy..."
             
-            # Navegar al directorio del proyecto
+            echo "🚀 Iniciando deploy en $(date)"
             cd /home/deploy/mini-erp
             
             # Actualizar código
             echo "📥 Actualizando código..."
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
             
-            # Descargar última imagen
+            # Descargar nueva imagen
             echo "🐳 Descargando imagen Docker..."
             docker compose -f docker-compose.prod.yml pull
             
-            # Detener contenedores
+            # Reiniciar contenedores
             echo "🛑 Deteniendo contenedores..."
-            docker compose -f docker-compose.prod.yml down
+            docker compose -f docker-compose.prod.yml down --timeout 30
             
-            # Iniciar nuevos contenedores
             echo "🚀 Iniciando contenedores..."
             docker compose -f docker-compose.prod.yml up -d
             
-            # Esperar que estén listos
-            echo "⏳ Esperando que servicios estén listos..."
-            sleep 10
+            # Migraciones
+            echo "🗄️ Migrating DB..."
+            docker compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput
             
-            # Ejecutar migraciones
-            echo "🗄️ Ejecutando migraciones..."
-            docker compose -f docker-compose.prod.yml exec -T web python manage.py migrate
-            
-            # Recolectar archivos estáticos
-            echo "📦 Recolectando archivos estáticos..."
+            # Archivos estáticos
+            echo "📦 Collecting static files..."
             docker compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
             
-            # Limpiar imágenes antiguas
-            echo "🧹 Limpiando imágenes..."
-            docker image prune -f
-            
+            # Limpiar imágenes viejas
+            echo "🧹 Limpiando imágenes antiguas..."
+            docker image prune -f --filter "until=24h" || true
+
             echo "✅ Deploy completado exitosamente!"
-            echo "🌐 Aplicación disponible en: http://${{ secrets.SERVER_IP }}:8800"
-            
-            # Mostrar estado
-            echo "📊 Estado de contenedores:"
             docker compose -f docker-compose.prod.yml ps
-          EOF
