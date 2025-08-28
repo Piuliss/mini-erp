@@ -53,38 +53,60 @@ if [ ! -f ".env.prod" ]; then
     echo "✅ Archivo .env.prod generado exitosamente"
 fi
 
-# Verificar que el archivo .env.prod existe y tiene las variables necesarias
-echo "📋 Verificando archivo .env.prod..."
+# Verificar configuración completa
+echo "🔍 Verificando configuración completa..."
+if [ -f "scripts_utils/verify_prod_setup.sh" ]; then
+    ./scripts_utils/verify_prod_setup.sh
+    if [ $? -ne 0 ]; then
+        echo "❌ Error en la verificación de configuración"
+        exit 1
+    fi
+else
+    echo "⚠️  Script de verificación no encontrado, continuando con verificación básica..."
+    
+    # Verificar que el archivo .env.prod existe y tiene las variables necesarias
+    echo "📋 Verificando archivo .env.prod..."
 
-# Función para verificar variable en el archivo .env.prod
-check_env_var() {
-    local var_name=$1
-    if grep -q "^${var_name}=" .env.prod; then
-        local var_value=$(grep "^${var_name}=" .env.prod | head -1 | cut -d'=' -f2- | tr -d '\r' | tr -d '"' | tr -d "'")
-        if [ -n "$var_value" ] && [ "$var_value" != "your_secure_password" ] && [ "$var_value" != "your-production-secret-key-here" ]; then
-            echo "✅ $var_name configurada correctamente"
-            return 0
+    # Función para verificar variable en el archivo .env.prod
+    check_env_var() {
+        local var_name=$1
+        if grep -q "^${var_name}=" .env.prod; then
+            local var_value=$(grep "^${var_name}=" .env.prod | head -1 | cut -d'=' -f2- | tr -d '\r' | tr -d '"' | tr -d "'")
+            if [ -n "$var_value" ] && [ "$var_value" != "your_secure_password" ] && [ "$var_value" != "your-production-secret-key-here" ]; then
+                echo "✅ $var_name configurada correctamente"
+                return 0
+            else
+                echo "❌ Error: Variable $var_name tiene valor por defecto o está vacía"
+                return 1
+            fi
         else
-            echo "❌ Error: Variable $var_name tiene valor por defecto o está vacía"
+            echo "❌ Error: Variable $var_name no está definida en .env.prod"
             return 1
         fi
-    else
-        echo "❌ Error: Variable $var_name no está definida en .env.prod"
-        return 1
-    fi
-}
+    }
 
-# Verificar variables críticas
-required_vars=("DATABASE_URL" "SECRET_KEY" "DB_PASSWORD" "DEBUG" "ALLOWED_HOSTS")
-for var in "${required_vars[@]}"; do
-    check_env_var "$var" || exit 1
-done
+    # Verificar variables críticas
+    required_vars=("DATABASE_URL" "SECRET_KEY" "DB_PASSWORD" "DEBUG" "ALLOWED_HOSTS")
+    for var in "${required_vars[@]}"; do
+        check_env_var "$var" || exit 1
+    done
 
-echo "✅ Archivo .env.prod verificado correctamente"
+    echo "✅ Archivo .env.prod verificado correctamente"
+fi
 
 # Detener contenedores existentes si están corriendo
 echo "🛑 Deteniendo contenedores existentes..."
 docker-compose -f docker-compose.prod.yml down --remove-orphans || true
+
+# Cargar variables de entorno desde .env.prod
+echo "📋 Cargando variables de entorno..."
+if [ -f ".env.prod" ]; then
+    export $(grep -v '^#' .env.prod | xargs)
+    echo "✅ Variables de entorno cargadas"
+else
+    echo "❌ Error: No se encontró el archivo .env.prod"
+    exit 1
+fi
 
 # Construir y levantar contenedores
 echo "🔨 Levantando contenedores de producción..."
