@@ -1,52 +1,52 @@
 [
-    {
-        "model": "users.role",
-        "pk": 1,
-        "fields": {
-            "name": "Administrator",
-            "description": "Full system access",
-            "created_at": "2024-01-01T00:00:00Z",
-            "updated_at": "2024-01-01T00:00:00Z"
-        }
-    },
-    {
-        "model": "users.role",
-        "pk": 2,
-        "fields": {
-            "name": "Manager",
-            "description": "Management and reporting access",
-            "created_at": "2024-01-01T00:00:00Z",
-            "updated_at": "2024-01-01T00:00:00Z"
-        }
-    },
-    {
-        "model": "users.role",
-        "pk": 3,
-        "fields": {
-            "name": "Sales",
-            "description": "Sales and customer management",
-            "created_at": "2024-01-01T00:00:00Z",
-            "updated_at": "2024-01-01T00:00:00Z"
-        }
-    },
-    {
-        "model": "users.role",
-        "pk": 4,
-        "fields": {
-            "name": "Inventory",
-            "description": "Inventory and stock management",
-            "created_at": "2024-01-01T00:00:00Z",
-            "updated_at": "2024-01-01T00:00:00Z"
-        }
-    },
-    {
-        "model": "users.role",
-        "pk": 5,
-        "fields": {
-            "name": "Purchases",
-            "description": "Purchase and supplier management",
-            "created_at": "2024-01-01T00:00:00Z",
-            "updated_at": "2024-01-01T00:00:00Z"
-        }
-    }
+{
+  "model": "users.role",
+  "pk": 1,
+  "fields": {
+    "name": "Administrator",
+    "description": "Full system access",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+},
+{
+  "model": "users.role",
+  "pk": 2,
+  "fields": {
+    "name": "Manager",
+    "description": "Management and reporting access",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+},
+{
+  "model": "users.role",
+  "pk": 3,
+  "fields": {
+    "name": "Sales",
+    "description": "Sales and customer management",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+},
+{
+  "model": "users.role",
+  "pk": 4,
+  "fields": {
+    "name": "Inventory",
+    "description": "Inventory and stock management",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+},
+{
+  "model": "users.role",
+  "pk": 5,
+  "fields": {
+    "name": "Purchases",
+    "description": "Purchase and supplier management",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+}
 ]

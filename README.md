@@ -149,9 +149,134 @@ Authorization: Bearer <access_token>
 # URL base (ajusta según tu configuración)
 BASE_URL="http://localhost:8800"  # Docker Compose
 # BASE_URL="http://localhost:8000"  # Desarrollo local
+# BASE_URL="http://185.218.124.154:8800"  # Producción
 
 # Headers comunes
-HEADERS="-H 'Content-Type: application/json'"
+HEADERS=""
+```
+
+## 🚀 Comandos de Producción
+
+### Verificar Estado del Servidor
+```bash
+# Verificar contenedores en ejecución
+docker container ls -a
+
+# Ver logs del contenedor web
+docker logs mini-erp-web-1
+
+# Ver logs en tiempo real
+docker logs -f mini-erp-web-1
+
+# Verificar estado de la base de datos
+docker exec mini-erp-db-1 pg_isready -U minierp_user -d minierp_prod
+```
+
+### Probar Endpoints de Producción
+```bash
+# URL base de producción
+PROD_URL="http://185.218.124.154:8800"
+
+# 1. Probar endpoint raíz (debería devolver 404, pero confirmar que Django responde)
+curl -v $PROD_URL/
+
+# 2. Probar documentación de la API
+curl -v $PROD_URL/api/docs/
+
+# 3. Probar endpoint de login (URL CORRECTA)
+curl -v -X POST $PROD_URL/api/users/users/login/ \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "email": "admin@minierp.com",
+    "password": "test123456"
+  }'
+
+# 4. Probar endpoint de productos (sin autenticación, debería devolver 401)
+curl -v $PROD_URL/api/inventory/products/
+
+# 5. Probar admin de Django
+curl -v $PROD_URL/admin/
+
+# 6. Verificar usuarios disponibles (requiere autenticación)
+curl -v $PROD_URL/api/users/users/ \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+### Diagnóstico de Problemas
+```bash
+# Verificar configuración de red
+curl -v $PROD_URL/api/docs/ 2>&1 | grep -E "(HTTP|Connected|Failed)"
+
+# Verificar si el puerto está abierto
+telnet 185.218.124.154 8800
+
+# Verificar logs de nginx/apache si hay proxy
+sudo tail -f /var/log/nginx/error.log
+sudo tail -f /var/log/apache2/error.log
+
+# Diagnóstico de autenticación
+echo "=== DIAGNÓSTICO DE AUTENTICACIÓN ==="
+echo "1. Verificando documentación de la API..."
+curl -s -o /dev/null -w "%{http_code}" $PROD_URL/api/docs/
+
+echo -e "\n2. Verificando endpoint de login..."
+curl -s -o /dev/null -w "%{http_code}" -X POST $PROD_URL/api/users/users/login/ \
+  -H 'Content-Type: application/json' \
+  -d '{"email": "test@test.com", "password": "test"}'
+
+echo -e "\n3. Verificando endpoint de productos (sin auth)..."
+curl -s -o /dev/null -w "%{http_code}" $PROD_URL/api/inventory/products/
+
+echo -e "\n4. Verificando admin de Django..."
+curl -s -o /dev/null -w "%{http_code}" $PROD_URL/admin/
+
+echo -e "\n=== FIN DEL DIAGNÓSTICO ==="
+```
+
+### Comandos de Gestión en Producción
+```bash
+# Reiniciar servicios
+docker-compose -f docker-compose.prod.yml restart
+
+# Reconstruir y reiniciar
+docker-compose -f docker-compose.prod.yml down
+docker-compose -f docker-compose.prod.yml up -d --build
+
+# Verificar variables de entorno
+docker exec mini-erp-web-1 env | grep -E "(DEBUG|ALLOWED_HOSTS|SECRET_KEY)"
+
+# Ejecutar comandos de Django en el contenedor
+docker exec mini-erp-web-1 python manage.py check
+docker exec mini-erp-web-1 python manage.py showmigrations
+
+# Verificar base de datos
+docker exec mini-erp-web-1 python manage.py dbshell
+
+# Verificar y cargar datos de prueba
+docker exec mini-erp-web-1 python manage.py loaddata fixtures/*.json
+
+# Crear superusuario si no existe
+docker exec -it mini-erp-web-1 python manage.py createsuperuser
+
+# Verificar usuarios existentes
+docker exec mini-erp-web-1 python manage.py shell -c "
+from users.models import User
+print('Usuarios existentes:')
+for user in User.objects.all():
+    print(f'- {user.email} ({user.username})')
+"
+```
+
+### Backup y Restauración
+```bash
+# Backup de la base de datos
+docker exec mini-erp-db-1 pg_dump -U minierp_user minierp_prod > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# Restaurar backup
+docker exec -i mini-erp-db-1 psql -U minierp_user minierp_prod < backup_file.sql
+
+# Backup de archivos de configuración
+cp .env.prod .env.prod.backup.$(date +%Y%m%d_%H%M%S)
 ```
 
 ### Autenticación
@@ -371,12 +496,12 @@ python manage.py createsuperuser
 ## 📚 Endpoints Principales
 
 ### Usuarios y Autenticación
-- `POST /api/users/register/` - Registro de usuario
-- `POST /api/users/login/` - Login
-- `GET /api/users/profile/` - Perfil del usuario
-- `PUT /api/users/update_profile/` - Actualizar perfil
-- `POST /api/users/change_password/` - Cambiar contraseña
-- `POST /api/users/logout/` - Logout
+- `POST /api/users/users/register/` - Registro de usuario
+- `POST /api/users/users/login/` - Login
+- `GET /api/users/users/profile/` - Perfil del usuario
+- `PUT /api/users/users/update_profile/` - Actualizar perfil
+- `POST /api/users/users/change_password/` - Cambiar contraseña
+- `POST /api/users/users/logout/` - Logout
 
 ### Inventario
 - `GET /api/inventory/products/` - Listar productos
@@ -416,7 +541,12 @@ El sistema incluye usuarios predefinidos:
 
 ## 📊 Datos de Prueba
 
-El sistema incluye datos de ejemplo:
+El sistema incluye datos de ejemplo con **fixtures corregidos** que funcionan correctamente:
+
+### Usuarios (con contraseñas funcionales)
+- **admin@minierp.com** / test123456 (Administrador)
+- **manager@minierp.com** / test123456 (Manager)
+- **sales@minierp.com** / test123456 (Ventas)
 
 ### Productos
 - Laptop Dell XPS 13
@@ -436,6 +566,24 @@ El sistema incluye datos de ejemplo:
 ### Clientes y Proveedores
 - 5 clientes de ejemplo
 - 5 proveedores de ejemplo
+
+### Fixtures
+
+Los fixtures incluyen datos de prueba. Si hay problemas con las contraseñas:
+
+```bash
+# Cargar fixtures
+docker exec mini-erp-web-1 python manage.py loaddata fixtures/*.json
+
+# Si las contraseñas no funcionan, resetearlas:
+docker exec -it mini-erp-web-1 python manage.py shell -c "
+from users.models import User
+for user in User.objects.all():
+    user.set_password('test123456')
+    user.save()
+    print(f'Contraseña actualizada para {user.email}')
+"
+```
 
 ## 🔧 Configuración
 
@@ -572,7 +720,7 @@ python scripts_utils/manage_dev.py test
 python scripts_utils/manage_dev.py docker-setup
 python scripts_utils/manage_dev.py docker-stop
 
-# Generar SECRET_KEY seguro
+# Generar SECRET_KEY seguro (si es necesario)
 python scripts_utils/manage_dev.py secret-key
 ```
 
@@ -596,18 +744,12 @@ python scripts_utils/manage_dev.py run
 Para generar SECRET_KEYs seguros para producción:
 
 ```bash
-# Script independiente con opciones avanzadas
-python scripts_utils/generate_secret_key.py --django-format --env-file
-
 # Comando integrado en manage_dev.py
 python scripts_utils/manage_dev.py secret-key
-```
 
-**Opciones del script `generate_secret_key.py`:**
-- `--length N`: Longitud del SECRET_KEY (default: 50)
-- `--django-format`: Usar formato específico de Django
-- `--env-file`: Generar formato para archivo .env
-- `--settings-file`: Generar formato para settings.py
+# O usar herramientas online como:
+# https://djecrety.ir/
+```
 
 ## 📁 Estructura del Proyecto
 
@@ -623,8 +765,6 @@ mini-erp/
 ├── tests_e2e/        # Tests end-to-end
 ├── scripts_utils/    # Scripts de utilidades
 │   ├── manage_dev.py     # Script principal de gestión
-│   ├── generate_secret_key.py # Generador de SECRET_KEYs
-│   ├── backup_db.py      # Script de backup PostgreSQL
 │   └── README.md         # Documentación de scripts
 ├── requirements.txt  # Dependencias
 ├── Dockerfile        # Configuración Docker
@@ -715,6 +855,105 @@ python manage.py migrate
 - **Seguridad**: Genera SECRET_KEYs únicos para cada entorno
 
 **¡Disfruta desarrollando tu frontend con este Mini ERP! 🚀**
+
+## 🔧 Solución de Problemas
+
+### Problemas Comunes en Producción
+
+#### 1. Endpoints no responden (404)
+**Síntomas**: Los endpoints devuelven 404 Not Found
+**Solución**: Verificar que las URLs sean correctas:
+- ✅ Correcto: `/api/users/users/login/`
+- ❌ Incorrecto: `/api/users/login/`
+
+#### 2. Error de autenticación (400)
+**Síntomas**: Login devuelve "Invalid credentials"
+**Solución rápida**:
+```bash
+# Resetear contraseñas de todos los usuarios
+docker exec -it mini-erp-web-1 python manage.py shell -c "
+from users.models import User
+for user in User.objects.all():
+    user.set_password('test123456')
+    user.save()
+    print(f'Contraseña actualizada para {user.email}')
+"
+```
+
+#### 3. Error de conectividad
+**Síntomas**: No se puede conectar al servidor
+**Solución**:
+```bash
+# Verificar contenedores
+docker container ls -a
+
+# Verificar logs
+docker logs mini-erp-web-1
+
+# Reiniciar servicios
+docker-compose -f docker-compose.prod.yml restart
+```
+
+#### 4. Error de permisos (401)
+**Síntomas**: Endpoints devuelven 401 Unauthorized
+**Causa**: Endpoints requieren autenticación
+**Solución**: Incluir token JWT en el header:
+```bash
+curl -H "Authorization: Bearer YOUR_TOKEN" $PROD_URL/api/inventory/products/
+```
+
+### Solución Rápida de Problemas
+
+#### Si las credenciales no funcionan:
+```bash
+# Acceder a la consola de Django en producción
+docker exec -it mini-erp-web-1 python manage.py shell
+
+# En la consola, ejecutar:
+from users.models import User
+for user in User.objects.all():
+    user.set_password('test123456')
+    user.save()
+    print(f'Contraseña actualizada para {user.email}')
+```
+
+### Credenciales de Prueba
+
+**✅ CONFIRMADO: Las siguientes credenciales funcionan en producción:**
+
+| Usuario | Email | Contraseña | Rol |
+|---------|-------|------------|-----|
+| admin | admin@minierp.com | test123456 | Administrador |
+| manager | manager@minierp.com | test123456 | Manager |
+| sales | sales@minierp.com | test123456 | Ventas |
+
+**Nota**: Si las credenciales no funcionan, ejecuta este comando en el servidor:
+```bash
+docker exec -it mini-erp-web-1 python manage.py shell -c "
+from users.models import User
+for user in User.objects.all():
+    user.set_password('test123456')
+    user.save()
+    print(f'Contraseña actualizada para {user.email}')
+"
+```
+
+### Comandos de Emergencia
+
+```bash
+# Reiniciar todo el stack
+docker-compose -f docker-compose.prod.yml down
+docker-compose -f docker-compose.prod.yml up -d
+
+# Verificar logs en tiempo real
+docker logs -f mini-erp-web-1
+
+# Acceder al shell de Django
+docker exec -it mini-erp-web-1 python manage.py shell
+
+# Verificar configuración
+docker exec mini-erp-web-1 python manage.py check
+```
 
 ## 🚀 Despliegue en Producción
 
@@ -849,43 +1088,16 @@ volumes:
 
 #### 5. Configuración de Variables de Entorno para Producción
 
-**Opción A: Configuración Automática (Recomendada)**
+Crea un archivo `.env.prod` basado en `env.prod.example`:
 
 ```bash
-# Generar archivo .env.prod con valores seguros
-python3 scripts_utils/setup_prod_env.py
-
-# Verificar configuración
-./scripts_utils/verify_prod_setup.sh
-
-# Ejecutar deploy
-./scripts_utils/deploy_prod.sh
-```
-
-**Opción B: Configuración Manual**
-
-Crea un archivo `.env.prod` basado en `env.prod.example`. Puedes usar **DATABASE_URL** (recomendado) o variables individuales:
-
-**Usando DATABASE_URL (Recomendado):**
-```bash
-# Base de datos
-DATABASE_URL=postgresql://minierp_user:your_secure_password@db:5432/minierp_prod
-
-# Django
-SECRET_KEY=your-production-secret-key-here
-DEBUG=False
-ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
-
-# CORS
-CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
-```
-
-**Usando Variables Individuales:**
-```bash
-# Base de datos
+# Base de datos - Variables individuales (simple)
 DB_PASSWORD=your_secure_password
+POSTGRES_PASSWORD=your_secure_password
 DB_NAME=minierp_prod
+POSTGRES_DB=minierp_prod
 DB_USER=minierp_user
+POSTGRES_USER=minierp_user
 DB_HOST=db
 DB_PORT=5432
 USE_POSTGRES=True
@@ -902,9 +1114,6 @@ CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 #### 6. Comandos de Despliegue
 
 ```bash
-# Verificar configuración antes del deploy
-./scripts_utils/verify_prod_setup.sh
-
 # Desplegar en producción
 ./scripts_utils/deploy_prod.sh
 
