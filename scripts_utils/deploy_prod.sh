@@ -53,14 +53,31 @@ if [ ! -f ".env.prod" ]; then
     echo "✅ Archivo .env.prod generado exitosamente"
 fi
 
-# Cargar variables de entorno
+# Cargar variables de entorno de forma segura
 echo "📋 Cargando variables de entorno..."
-source .env.prod
+
+# Función para leer variable del archivo .env.prod
+get_env_var() {
+    local var_name=$1
+    local var_line=$(grep "^${var_name}=" .env.prod | head -1)
+    if [ -n "$var_line" ]; then
+        echo "${var_line#*=}" | tr -d '\r' | tr -d '"' | tr -d "'"
+    fi
+}
+
+# Leer variables críticas
+DATABASE_URL=$(get_env_var "DATABASE_URL")
+SECRET_KEY=$(get_env_var "SECRET_KEY")
+DB_PASSWORD=$(get_env_var "DB_PASSWORD")
+DEBUG=$(get_env_var "DEBUG")
+ALLOWED_HOSTS=$(get_env_var "ALLOWED_HOSTS")
+CORS_ALLOWED_ORIGINS=$(get_env_var "CORS_ALLOWED_ORIGINS")
 
 # Verificar que las variables necesarias están definidas
 required_vars=("DATABASE_URL" "SECRET_KEY" "DB_PASSWORD" "DEBUG" "ALLOWED_HOSTS")
 for var in "${required_vars[@]}"; do
-    if [ -z "${!var}" ]; then
+    var_value="${!var}"
+    if [ -z "$var_value" ]; then
         echo "❌ Error: Variable $var no está definida en .env.prod"
         exit 1
     fi
