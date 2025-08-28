@@ -41,7 +41,15 @@ check_var() {
 }
 
 # Verificar variables requeridas
-required_vars=("DB_PASSWORD" "SECRET_KEY" "DB_NAME" "DB_USER" "DB_HOST" "DB_PORT" "USE_POSTGRES")
+# Priorizar DATABASE_URL si está disponible
+if [ -n "$DATABASE_URL" ]; then
+    echo "✅ DATABASE_URL: configurada"
+    required_vars=("SECRET_KEY")
+else
+    echo "⚠️  DATABASE_URL: no configurada, verificando variables individuales..."
+    required_vars=("DB_PASSWORD" "SECRET_KEY" "DB_NAME" "DB_USER" "DB_HOST" "DB_PORT" "USE_POSTGRES")
+fi
+
 all_good=true
 
 for var in "${required_vars[@]}"; do
@@ -70,13 +78,19 @@ fi
 
 echo "✅ Docker está funcionando correctamente"
 
-# Verificar que docker-compose está disponible
-if ! command -v docker-compose &> /dev/null; then
-    echo "❌ Error: docker-compose no está instalado"
+# Verificar que docker compose está disponible
+if ! command -v docker &> /dev/null; then
+    echo "❌ Error: docker no está instalado"
     exit 1
 fi
 
-echo "✅ docker-compose está disponible"
+# Verificar que docker compose funciona
+if ! docker compose version &> /dev/null; then
+    echo "❌ Error: docker compose no está disponible"
+    exit 1
+fi
+
+echo "✅ docker compose está disponible"
 
 # Verificar que el archivo docker-compose.prod.yml existe
 if [ ! -f "docker-compose.prod.yml" ]; then

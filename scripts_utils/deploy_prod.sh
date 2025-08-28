@@ -96,7 +96,7 @@ fi
 
 # Detener contenedores existentes si están corriendo
 echo "🛑 Deteniendo contenedores existentes..."
-docker-compose -f docker-compose.prod.yml down --remove-orphans || true
+docker compose -f docker-compose.prod.yml down --remove-orphans || true
 
 # Cargar variables de entorno desde .env.prod
 echo "📋 Cargando variables de entorno..."
@@ -110,7 +110,7 @@ fi
 
 # Construir y levantar contenedores
 echo "🔨 Levantando contenedores de producción..."
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # Esperar a que la base de datos esté lista
 echo "⏳ Esperando a que la base de datos esté lista..."
@@ -118,15 +118,15 @@ sleep 10
 
 # Ejecutar migraciones
 echo "📊 Ejecutando migraciones..."
-docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate
+docker compose -f docker-compose.prod.yml exec -T web python manage.py migrate
 
 # Cargar datos iniciales si es necesario
 echo "📦 Cargando datos iniciales..."
-docker-compose -f docker-compose.prod.yml exec -T web python manage.py loaddata fixtures/*.json || true
+docker compose -f docker-compose.prod.yml exec -T web python manage.py loaddata fixtures/*.json || true
 
 # Recolectar archivos estáticos
 echo "📁 Recolectando archivos estáticos..."
-docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
+docker compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
 
 echo ""
 echo "🎉 ¡Deploy completado exitosamente!"
@@ -134,12 +134,12 @@ echo ""
 echo "📋 Información del deploy:"
 echo "   - URL: http://localhost:8800"
 echo "   - Base de datos: PostgreSQL en puerto 5432"
-echo "   - Contenedores: docker-compose -f docker-compose.prod.yml ps"
+echo "   - Contenedores: docker compose -f docker-compose.prod.yml ps"
 echo ""
 echo "🔧 Comandos útiles:"
-echo "   - Ver logs: docker-compose -f docker-compose.prod.yml logs -f"
-echo "   - Detener: docker-compose -f docker-compose.prod.yml down"
-echo "   - Reiniciar: docker-compose -f docker-compose.prod.yml restart"
+echo "   - Ver logs: docker compose -f docker-compose.prod.yml logs -f"
+echo "   - Detener: docker compose -f docker-compose.prod.yml down"
+echo "   - Reiniciar: docker compose -f docker-compose.prod.yml restart"
 echo ""
 echo "⚠️  IMPORTANTE:"
 echo "   - Actualiza ALLOWED_HOSTS y CORS_ALLOWED_ORIGINS en .env.prod con tu dominio real"

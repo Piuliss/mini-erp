@@ -79,6 +79,41 @@ python scripts_utils/backup_db.py list
 python scripts_utils/backup_db.py restore backup_file.sql
 ```
 
+### 🚀 setup_prod_env.py
+Script para configurar automáticamente el archivo `.env.prod` con valores seguros para producción.
+
+**Uso:**
+```bash
+# Configurar .env.prod con valores generados automáticamente
+python scripts_utils/setup_prod_env.py
+```
+
+**Características:**
+- Genera contraseña segura para la base de datos
+- Genera SECRET_KEY seguro para Django
+- Crea el archivo `.env.prod` basado en `env.prod.example`
+- Pregunta antes de sobrescribir si ya existe
+
+### 🚀 deploy_prod.sh
+Script de deploy automatizado para producción.
+
+**Uso:**
+```bash
+# Ejecutar deploy completo
+./scripts_utils/deploy_prod.sh
+```
+
+**Características:**
+- Verifica y genera `.env.prod` si no existe
+- Carga variables de entorno
+- Levanta contenedores con `docker-compose.prod.yml`
+- Ejecuta migraciones automáticamente
+- Carga datos iniciales
+- Recolecta archivos estáticos
+- Proporciona información útil post-deploy
+
+
+
 ## 🔧 Configuración
 
 Todos los scripts están diseñados para ejecutarse desde la raíz del proyecto:

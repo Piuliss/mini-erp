@@ -75,6 +75,12 @@ def setup_prod_env():
     content = content.replace('your_secure_password', db_password)
     content = content.replace('your-production-secret-key-here', secret_key)
     
+    # Generar DATABASE_URL con encoding seguro
+    import urllib.parse
+    safe_password = urllib.parse.quote(db_password, safe='')
+    database_url = f"postgresql://minierp_user:{safe_password}@db:5432/minierp_prod"
+    content = content.replace('postgresql://minierp_user:your_secure_password@db:5432/minierp_prod', database_url)
+    
     # Escribir el archivo .env.prod
     with open(env_prod_path, 'w', encoding='utf-8') as f:
         f.write(content)

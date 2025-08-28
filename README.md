@@ -815,7 +815,7 @@ docker-compose -f docker-compose.prod.yml up -d --scale web=3
 
 #### 4. Docker Compose para Producción
 
-Crea `docker-compose.prod.yml`:
+El archivo `docker-compose.prod.yml` ya está configurado en el proyecto:
 
 ```yaml
 version: '3.8'
@@ -824,18 +824,17 @@ services:
   web:
     image: honeyjack/mini-erp:latest
     ports:
-      - "80:8000"
-    environment:
-      - DATABASE_URL=postgresql://user:pass@host:5432/dbname
-      - SECRET_KEY=${SECRET_KEY}
-      - DEBUG=False
-      - ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+      - "8800:8000"
+    env_file:
+      - .env.prod
     depends_on:
       - db
     restart: unless-stopped
 
   db:
     image: postgres:15
+    env_file:
+      - .env.prod
     environment:
       - POSTGRES_DB=minierp_prod
       - POSTGRES_USER=minierp_user
@@ -848,14 +847,48 @@ volumes:
   postgres_data:
 ```
 
-#### 5. Variables de Entorno para Producción
+#### 5. Configuración de Variables de Entorno para Producción
 
-Crea un archivo `.env.prod`:
+**Opción A: Configuración Automática (Recomendada)**
 
+```bash
+# Generar archivo .env.prod con valores seguros
+python3 scripts_utils/setup_prod_env.py
+
+# Verificar configuración
+./scripts_utils/verify_prod_setup.sh
+
+# Ejecutar deploy
+./scripts_utils/deploy_prod.sh
+```
+
+**Opción B: Configuración Manual**
+
+Crea un archivo `.env.prod` basado en `env.prod.example`. Puedes usar **DATABASE_URL** (recomendado) o variables individuales:
+
+**Usando DATABASE_URL (Recomendado):**
 ```bash
 # Base de datos
 DATABASE_URL=postgresql://minierp_user:your_secure_password@db:5432/minierp_prod
+
+# Django
+SECRET_KEY=your-production-secret-key-here
+DEBUG=False
+ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+
+# CORS
+CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+```
+
+**Usando Variables Individuales:**
+```bash
+# Base de datos
 DB_PASSWORD=your_secure_password
+DB_NAME=minierp_prod
+DB_USER=minierp_user
+DB_HOST=db
+DB_PORT=5432
+USE_POSTGRES=True
 
 # Django
 SECRET_KEY=your-production-secret-key-here
@@ -869,15 +902,20 @@ CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 #### 6. Comandos de Despliegue
 
 ```bash
-# Hacer push de una nueva versión
-git tag v1.0.0
-git push origin v1.0.0
+# Verificar configuración antes del deploy
+./scripts_utils/verify_prod_setup.sh
 
-# Desplegar en servidor de producción
-ssh your-server "cd /opt/mini-erp && docker-compose -f docker-compose.prod.yml pull && docker-compose -f docker-compose.prod.yml up -d"
+# Desplegar en producción
+./scripts_utils/deploy_prod.sh
 
 # Verificar el estado
-ssh your-server "cd /opt/mini-erp && docker-compose -f docker-compose.prod.yml ps"
+docker-compose -f docker-compose.prod.yml ps
+
+# Ver logs
+docker-compose -f docker-compose.prod.yml logs -f
+
+# Detener servicios
+docker-compose -f docker-compose.prod.yml down
 ```
 
 ### Monitoreo y Logs
