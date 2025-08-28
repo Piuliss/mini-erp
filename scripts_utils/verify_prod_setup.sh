@@ -70,10 +70,18 @@ if [ -f ".env.prod" ]; then
     # Función para verificar variable
     check_var() {
         local var_name=$1
-        local var_value=$(grep "^${var_name}=" .env.prod | cut -d'=' -f2-)
+        local var_line=$(grep "^${var_name}=" .env.prod | head -1)
+        
+        if [ -z "$var_line" ]; then
+            echo "❌ Error: Variable $var_name no está definida en .env.prod"
+            return 1
+        fi
+        
+        local var_value="${var_line#*=}"
+        var_value=$(echo "$var_value" | tr -d '\r' | tr -d '"' | tr -d "'")
         
         if [ -z "$var_value" ]; then
-            echo "❌ Error: Variable $var_name no está definida en .env.prod"
+            echo "❌ Error: Variable $var_name está vacía"
             return 1
         elif [ "$var_value" = "your_secure_password" ] || [ "$var_value" = "your-production-secret-key-here" ]; then
             echo "❌ Error: Variable $var_name tiene valor por defecto"
@@ -84,7 +92,8 @@ if [ -f ".env.prod" ]; then
         fi
     }
     
-    # Verificar variables críticas
+    # Verificar variables críticas (sin cargar el archivo como script)
+    echo "🔍 Verificando variables críticas..."
     check_var "DB_PASSWORD" || exit 1
     check_var "SECRET_KEY" || exit 1
     check_var "DATABASE_URL" || exit 1

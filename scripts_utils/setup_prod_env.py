@@ -32,9 +32,10 @@ def generate_secure_password(length=16):
 def generate_django_secret_key():
     """
     Genera un SECRET_KEY específicamente para Django
+    Evita caracteres problemáticos para bash
     """
-    # Caracteres específicos para Django SECRET_KEY
-    chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+    # Caracteres específicos para Django SECRET_KEY (sin caracteres problemáticos para bash)
+    chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*-_=+'
     
     # Generar 50 caracteres aleatorios
     return ''.join(secrets.choice(chars) for _ in range(50))
