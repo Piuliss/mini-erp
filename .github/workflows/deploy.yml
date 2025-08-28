@@ -50,6 +50,7 @@ jobs:
             # Hacer los scripts ejecutables
             echo "🔧 Configurando scripts..."
             chmod +x scripts_utils/deploy_prod.sh
+            chmod +x scripts_utils/setup_prod_env.py
             chmod +x scripts_utils/verify_prod_setup.sh
             
             # Verificar configuración antes del deploy
