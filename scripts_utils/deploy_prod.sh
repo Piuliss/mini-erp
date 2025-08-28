@@ -12,10 +12,29 @@ if [ ! -f "manage.py" ]; then
     exit 1
 fi
 
+# Verificar que Docker está disponible
+if ! command -v docker &> /dev/null; then
+    echo "❌ Error: Docker no está instalado"
+    exit 1
+fi
+
+if ! docker info &> /dev/null; then
+    echo "❌ Error: Docker no está ejecutándose o no tienes permisos"
+    exit 1
+fi
+
+echo "✅ Docker está funcionando correctamente"
+
 # Verificar que existe el archivo .env.prod
 if [ ! -f ".env.prod" ]; then
     echo "⚠️  No se encontró el archivo .env.prod"
     echo "🔧 Generando archivo .env.prod con valores seguros..."
+    
+    # Verificar que el script de configuración existe
+    if [ ! -f "scripts_utils/setup_prod_env.py" ]; then
+        echo "❌ Error: No se encontró scripts_utils/setup_prod_env.py"
+        exit 1
+    fi
     
     # Ejecutar el script de configuración
     python3 scripts_utils/setup_prod_env.py
@@ -24,6 +43,14 @@ if [ ! -f ".env.prod" ]; then
         echo "❌ Error al generar .env.prod"
         exit 1
     fi
+    
+    # Verificar que se creó correctamente
+    if [ ! -f ".env.prod" ]; then
+        echo "❌ Error: No se pudo crear el archivo .env.prod"
+        exit 1
+    fi
+    
+    echo "✅ Archivo .env.prod generado exitosamente"
 fi
 
 # Cargar variables de entorno
