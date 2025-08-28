@@ -4,7 +4,7 @@ services:
   web:
     image: honeyjack/mini-erp:latest
     ports:
-      - "80:8000"
+      - "8800:8000"
     environment:
       - DATABASE_URL=postgresql://user:pass@host:5432/dbname
       - SECRET_KEY=${SECRET_KEY}

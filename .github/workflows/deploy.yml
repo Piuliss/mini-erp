@@ -1,0 +1,77 @@
+name: Deploy to Production
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment: production
+    
+    steps:
+      - name: Check workflow status
+        run: |
+          echo "✅ CI/CD Pipeline completed successfully"
+          echo "🚀 Starting deployment to production..."
+      
+      - name: Deploy to production server
+        run: |
+          # Configurar SSH para conectar al servidor
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+          
+          # Ejecutar deploy
+          ssh -o StrictHostKeyChecking=no deploy@${{ secrets.SERVER_IP }} << 'EOF'
+            set -e
+            echo "🚀 Iniciando deploy..."
+            
+            # Navegar al directorio del proyecto
+            cd /home/deploy/mini-erp
+            
+            # Actualizar código
+            echo "📥 Actualizando código..."
+            git pull origin main
+            
+            # Descargar última imagen
+            echo "🐳 Descargando imagen Docker..."
+            docker compose -f docker-compose.prod.yml pull
+            
+            # Detener contenedores
+            echo "🛑 Deteniendo contenedores..."
+            docker compose -f docker-compose.prod.yml down
+            
+            # Iniciar nuevos contenedores
+            echo "🚀 Iniciando contenedores..."
+            docker compose -f docker-compose.prod.yml up -d
+            
+            # Esperar que estén listos
+            echo "⏳ Esperando que servicios estén listos..."
+            sleep 10
+            
+            # Ejecutar migraciones
+            echo "🗄️ Ejecutando migraciones..."
+            docker compose -f docker-compose.prod.yml exec -T web python manage.py migrate
+            
+            # Recolectar archivos estáticos
+            echo "📦 Recolectando archivos estáticos..."
+            docker compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
+            
+            # Limpiar imágenes antiguas
+            echo "🧹 Limpiando imágenes..."
+            docker image prune -f
+            
+            echo "✅ Deploy completado exitosamente!"
+            echo "🌐 Aplicación disponible en: http://${{ secrets.SERVER_IP }}:8800"
+            
+            # Mostrar estado
+            echo "📊 Estado de contenedores:"
+            docker compose -f docker-compose.prod.yml ps
+          EOF
