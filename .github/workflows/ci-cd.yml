@@ -107,14 +107,14 @@ jobs:
         git commit -m "Bump version to ${{ steps.bump_version.outputs.version }}"
         git push origin main
 
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
     needs: [test, bump-version]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     permissions:
       contents: read
       packages: write
-    name: Build and Push to Docker Hub
+    name: Build, Push and Deploy to Production
 
     steps:
     - name: Checkout repository
@@ -157,8 +157,49 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: Notify success
+    - name: Notify build success
       run: |
         echo "✅ Build and push completed successfully!"
         echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
         echo "Tags: ${{ steps.meta.outputs.tags }}"
+
+    - name: Deploy to production server
+      if: github.ref == 'refs/heads/main'
+      uses: appleboy/ssh-action@v1.0.1
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: deploy
+        key: ${{ secrets.DEPLOY_SSH_KEY }}
+        port: 22
+        timeout: 300s
+        command_timeout: 60s
+        script: |
+          set -e
+          
+          echo "🚀 Iniciando deploy en $(date)"
+          cd /home/deploy/mini-erp
+          
+          # Actualizar código
+          echo "📥 Actualizando código..."
+          git fetch origin
+          git reset --hard origin/main
+          git clean -fd
+          
+          # Hacer los scripts ejecutables
+          echo "🔧 Configurando scripts..."
+          chmod +x scripts_utils/deploy_prod.sh
+          
+          # Ejecutar deploy automatizado (incluye verificación y generación de .env.prod)
+          echo "🚀 Ejecutando deploy automatizado..."
+          ./scripts_utils/deploy_prod.sh
+          
+          # Verificar estado final
+          echo "📊 Estado final de los contenedores:"
+          docker compose -f docker-compose.prod.yml ps
+          
+          # Limpiar imágenes viejas
+          echo "🧹 Limpiando imágenes antiguas..."
+          docker image prune -f --filter "until=24h" || true
+
+          echo "✅ Deploy completado exitosamente!"
+          echo "🌐 Aplicación disponible en: http://${{ secrets.SERVER_IP }}:8800"
