@@ -62,6 +62,10 @@ schema_view = get_schema_view(
         - Products and categories
         - Customers and suppliers
         - Sample orders and invoices
+        
+        ## Test Credentials:
+        - **Email**: admin@minierp.com
+        - **Password**: test123456
         """,
         terms_of_service="https://www.google.com/policies/terms/",
         contact=openapi.Contact(email="admin@minierp.com"),
@@ -69,6 +73,7 @@ schema_view = get_schema_view(
     ),
     public=True,
     permission_classes=[permissions.AllowAny],
+    authentication_classes=[],  # No authentication required for documentation
 )
 
 urlpatterns = [
