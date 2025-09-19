@@ -324,20 +324,6 @@ La documentación completa está disponible públicamente en:
 - **Swagger UI**: http://185.218.124.154:8800/api/docs/
 - **ReDoc**: http://185.218.124.154:8800/api/redoc/
 
-### 🔧 Configuración de Documentación
-
-Si la documentación no está accesible, ejecuta el script de reparación:
-```bash
-# Ejecutar desde el directorio raíz del proyecto
-./scripts_utils/fix_docs_access.sh
-```
-
-### 📚 Características de la Documentación
-
-- **Acceso público**: No requiere autenticación para ver la documentación
-- **Interfaz interactiva**: Puedes probar los endpoints directamente desde Swagger
-- **Credenciales incluidas**: Las credenciales de prueba están documentadas
-- **Ejemplos completos**: Incluye ejemplos de requests y responses
 
 ## 🎯 Casos de Uso para Estudiantes
 
