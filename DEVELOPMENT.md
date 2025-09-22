@@ -12,7 +12,13 @@ git clone <repository-url>
 cd mini-erp
 ```
 
-2. **Ejecutar con Docker Compose**
+2. **Crear archivo de configuración**
+```bash
+# Crear archivo .env para desarrollo
+cp env.example .env
+```
+
+3. **Ejecutar con Docker Compose**
 ```bash
 docker-compose up --build
 ```
@@ -147,17 +153,42 @@ for user in User.objects.all():
 
 ### Variables de Entorno
 
-Crear archivo `.env`:
+El proyecto usa variables de entorno para configuración flexible. El archivo `docker-compose.yml` está configurado para leer automáticamente las variables del archivo `.env`.
+
+**Crear archivo `.env`**:
+```bash
+# Copiar el archivo de ejemplo
+cp env.example .env
+```
+
+**Contenido del archivo `.env`**:
 ```env
+# Django Settings
 SECRET_KEY=your-secret-key-here
 DEBUG=True
+
+# Database Settings
 DB_NAME=mini_erp
 DB_USER=erp_user
 DB_PASSWORD=erp_password
-DB_HOST=localhost
+DB_HOST=db
 DB_PORT=5432
 USE_POSTGRES=True
+
+# JWT Settings (opcional)
+# ACCESS_TOKEN_LIFETIME=1:00:00
+# REFRESH_TOKEN_LIFETIME=1:00:00
+
+# CORS Settings (opcional)
+# CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 ```
+
+**Ventajas de usar `.env`**:
+- ✅ Configuración centralizada
+- ✅ Valores por defecto seguros
+- ✅ Fácil personalización
+- ✅ No hardcodeado en archivos
+- ✅ Diferentes configuraciones por entorno
 
 ### Configuración de Base de Datos
 

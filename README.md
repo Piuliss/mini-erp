@@ -35,6 +35,11 @@ Un sistema ERP completo construido con Django REST Framework, diseñado para que
 ```bash
 git clone <repository-url>
 cd mini-erp
+
+# Crear archivo .env para desarrollo
+cp env.example .env
+
+# Configurar entorno
 python scripts_utils/manage_dev.py setup
 ```
 

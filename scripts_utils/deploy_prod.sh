@@ -29,4 +29,13 @@ docker compose -f docker-compose.prod.yml exec -T web python manage.py loaddata 
 echo "📁 Recolectando archivos estáticos..."
 docker compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
 
+echo "📁 Seteando contraseñas de usuarios..."
+docker compose -f docker-compose.prod.yml exec -T web python manage.py shell -c "
+from users.models import User
+for user in User.objects.all():
+    user.set_password('test123456')
+    user.save()
+    print(f'Contraseña actualizada para {user.email}')
+"
+
 echo "🎉 ¡Deploy completado!"

@@ -2,14 +2,14 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_DB: mini_erp
-      POSTGRES_USER: erp_user
-      POSTGRES_PASSWORD: erp_password
+      POSTGRES_DB: ${DB_NAME:-mini_erp}
+      POSTGRES_USER: ${DB_USER:-erp_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-erp_password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U erp_user -d mini_erp"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-erp_user} -d ${DB_NAME:-mini_erp}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -22,14 +22,15 @@ services:
     ports:
       - "8800:8000"
     environment:
-      - USE_POSTGRES=True
-      - DB_NAME=mini_erp
-      - DB_USER=erp_user
-      - DB_PASSWORD=erp_password
-      - DB_HOST=db
-      - DB_PORT=5432
-      - SECRET_KEY=your-secret-key-here
-      - DEBUG=True
+      - USE_POSTGRES=${USE_POSTGRES:-True}
+      - DB_NAME=${DB_NAME:-mini_erp}
+      - DB_USER=${DB_USER:-erp_user}
+      - DB_PASSWORD=${DB_PASSWORD:-erp_password}
+      - DB_HOST=${DB_HOST:-db}
+      - DB_PORT=${DB_PORT:-5432}
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
+      - DEBUG=${DEBUG:-False}
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
     depends_on:
       db:
         condition: service_healthy
