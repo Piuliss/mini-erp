@@ -22,7 +22,7 @@ class ProductSerializer(serializers.ModelSerializer):
     Serializer for Product model
     """
     category = CategorySerializer(read_only=True)
-    category_id = serializers.IntegerField(write_only=True)
+    category_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
     stock_status = serializers.ReadOnlyField()
     created_by_name = serializers.ReadOnlyField(source='created_by.full_name')
 
@@ -35,6 +35,10 @@ class ProductSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'created_by_name']
+        extra_kwargs = {
+            'sku': {'required': False, 'allow_null': True, 'allow_blank': True},
+            'cost_price': {'required': False, 'allow_null': True}
+        }
 
 
 class StockMovementSerializer(serializers.ModelSerializer):

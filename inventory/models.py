@@ -25,10 +25,10 @@ class Product(models.Model):
     """
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    sku = models.CharField(max_length=50, unique=True)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
+    sku = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products', null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    cost_price = models.DecimalField(max_digits=10, decimal_places=2)
+    cost_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     stock_quantity = models.IntegerField(default=0)
     min_stock_level = models.IntegerField(default=0)
     max_stock_level = models.IntegerField(default=1000)
