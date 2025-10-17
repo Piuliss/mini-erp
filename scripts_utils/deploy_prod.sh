@@ -66,6 +66,10 @@ wait_for_django
 echo "📊 Ejecutando migraciones..."
 $COMPOSE_CMD exec -T web python manage.py migrate
 
+# Cargar datos iniciales (solo si la DB está vacía)
+echo "📦 Verificando datos iniciales..."
+$COMPOSE_CMD exec -T web python manage.py load_initial_data || true
+
 # Recolectar archivos estáticos
 echo "📁 Recolectando archivos estáticos..."
 $COMPOSE_CMD exec -T web python manage.py collectstatic --noinput || true
