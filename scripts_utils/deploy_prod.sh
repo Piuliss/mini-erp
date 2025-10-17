@@ -70,6 +70,16 @@ $COMPOSE_CMD exec -T web python manage.py migrate
 echo "📦 Verificando datos iniciales..."
 $COMPOSE_CMD exec -T web python manage.py load_initial_data || true
 
+# Resetear contraseñas de usuarios (para desarrollo/testing)
+echo "🔐 Reseteando contraseñas de usuarios..."
+$COMPOSE_CMD exec -T web python manage.py shell -c "
+from users.models import User
+for user in User.objects.all():
+    user.set_password('test123456')
+    user.save()
+    print(f'Contraseña actualizada para {user.email}')
+" || true
+
 # Recolectar archivos estáticos
 echo "📁 Recolectando archivos estáticos..."
 $COMPOSE_CMD exec -T web python manage.py collectstatic --noinput || true
