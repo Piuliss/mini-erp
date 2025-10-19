@@ -177,7 +177,7 @@ jobs:
           set -e
           
           echo "🚀 Iniciando deploy en $(date)"
-          cd /home/deploy/mini-erp
+          cd /opt/mini-erp
           
           # Actualizar código
           echo "📥 Actualizando código..."

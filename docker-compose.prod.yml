@@ -1,10 +1,16 @@
+version: "3.8"
+
 services:
   db:
     image: postgres:15
+    container_name: mini-erp-db
     env_file:
       - .env.prod
+    environment:
+      - TZ=America/Asuncion
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
@@ -12,23 +18,61 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    networks:
+      - default
 
   web:
     image: honeyjack/mini-erp:latest
-    ports:
-      - "8800:8000"
+    container_name: mini-erp-web
     env_file:
       - .env.prod
+    environment:
+      - TZ=America/Asuncion
+      # Si tu app necesita saber su URL pública detrás de proxy, puedes añadir variables como:
+      # - DJANGO_SECURE_PROXY_SSL_HEADER=HTTP_X_FORWARDED_PROTO,https
+      # - USE_X_FORWARDED_HOST=true
+      # Ajusta según tu framework.
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    labels:
+      - traefik.enable=true
+
+      # Router principal HTTPS
+      - traefik.http.routers.minierp.rule=Host(`minierp.rbnetto.dev`)
+      - traefik.http.routers.minierp.entrypoints=websecure
+      - traefik.http.routers.minierp.tls.certresolver=letsencrypt
+
+      # Servicio: puerto interno del contenedor web
+      - traefik.http.services.minierp.loadbalancer.server.port=8000
+      - traefik.http.services.minierp.loadbalancer.server.scheme=http
+
+      # Redirección HTTP → HTTPS
+      - traefik.http.routers.minierp-redirect.rule=Host(`minierp.rbnetto.dev`)
+      - traefik.http.routers.minierp-redirect.entrypoints=web
+      - traefik.http.routers.minierp-redirect.middlewares=redirect-to-https
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+
+      # Asegura que Traefik use la red correcta
+      - traefik.docker.network=traefik_proxy
+    networks:
+      - traefik_proxy
+      - default
+    ports: []  # Nada expuesto directamente, todo por Traefik
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
 
 volumes:
   postgres_data:
+    external: true
+
+networks:
+  traefik_proxy:
+    external: true
