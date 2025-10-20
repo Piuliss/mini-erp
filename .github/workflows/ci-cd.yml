@@ -203,4 +203,4 @@ jobs:
           docker image prune -f --filter "until=24h" || true
 
           echo "✅ Deploy completado exitosamente!"
-          echo "🌐 Aplicación disponible en: http://${{ secrets.SERVER_IP }}:8800"
+          echo "🌐 Aplicación disponible en: http://${{ secrets.SERVER_IP }}:8000"

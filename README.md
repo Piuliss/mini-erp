@@ -63,7 +63,7 @@ python scripts_utils/manage_dev.py run
 ### Configuración Base
 ```bash
 # URL base de producción
-BASE_URL="http://185.218.124.154:8800"
+BASE_URL="http://185.218.124.154:8000"
 
 # Headers comunes
 HEADERS="-H 'Content-Type: application/json'"
@@ -90,7 +90,7 @@ curl -v $BASE_URL/admin/
 curl -v $BASE_URL/api/docs/ 2>&1 | grep -E "(HTTP|Connected|Failed)"
 
 # Verificar si el puerto está abierto
-telnet 185.218.124.154 8800
+telnet 185.218.124.154 8000
 
 # Diagnóstico de autenticación
 echo "=== DIAGNÓSTICO DE AUTENTICACIÓN ==="
@@ -256,7 +256,7 @@ curl -X GET $BASE_URL/api/reports/inventory_report/ \
 
 
 ### Notas Importantes
-- **URL de Producción**: `http://185.218.124.154:8800` (fija para todas las pruebas)
+- **URL de Producción**: `http://185.218.124.154:8000` (fija para todas las pruebas)
 - **Reemplaza `$TOKEN`** con el token obtenido del login
 - **Instala `jq`** para mejor formato de respuesta: `brew install jq` (macOS) o `apt install jq` (Ubuntu)
 - **Los IDs** (como `/1/`) pueden variar según los datos existentes en producción
@@ -326,8 +326,8 @@ for user in User.objects.all():
 ## 📖 Documentación de la API
 
 La documentación completa está disponible públicamente en:
-- **Swagger UI**: http://185.218.124.154:8800/api/docs/
-- **ReDoc**: http://185.218.124.154:8800/api/redoc/
+- **Swagger UI**: http://185.218.124.154:8000/api/docs/
+- **ReDoc**: http://185.218.124.154:8000/api/redoc/
 
 
 ## 🎯 Casos de Uso para Estudiantes

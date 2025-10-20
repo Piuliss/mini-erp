@@ -20,7 +20,7 @@ services:
     volumes:
       - .:/app
     ports:
-      - "8800:8000"
+      - "8000:8000"
     environment:
       - USE_POSTGRES=${USE_POSTGRES:-True}
       - DB_NAME=${DB_NAME:-mini_erp}

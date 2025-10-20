@@ -604,7 +604,7 @@ services:
   web:
     image: honeyjack/mini-erp:latest
     ports:
-      - "8800:8000"
+      - "8000:8000"
     env_file:
       - .env.prod
     depends_on:

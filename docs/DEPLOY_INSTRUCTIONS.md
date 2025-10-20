@@ -76,9 +76,9 @@ docker compose -f docker-compose.prod.yml logs -f web
 
 Después del despliegue, verifica que las siguientes URLs funcionen:
 
-- **Swagger UI**: http://185.218.124.154:8800/api/docs/
-- **ReDoc**: http://185.218.124.154:8800/api/redoc/
-- **Admin**: http://185.218.124.154:8800/admin/
+- **Swagger UI**: http://185.218.124.154:8000/api/docs/
+- **ReDoc**: http://185.218.124.154:8000/api/redoc/
+- **Admin**: http://185.218.124.154:8000/admin/
 
 ## Comandos Útiles
 
