@@ -29,31 +29,6 @@ Un sistema ERP completo construido con Django REST Framework, diseñado para que
 - Docker y Docker Compose (recomendado)
 - PostgreSQL (opcional, SQLite por defecto)
 
-## ⚡ Inicio Rápido (5 minutos)
-
-### 1. Clonar y Configurar
-```bash
-git clone <repository-url>
-cd mini-erp
-
-# Crear archivo .env para desarrollo
-cp env.example .env
-
-# Configurar entorno
-python scripts_utils/manage_dev.py setup
-```
-
-### 2. Iniciar Servidor
-```bash
-python scripts_utils/manage_dev.py run
-```
-
-### 3. Acceder a la API
-- **Documentación**: http://localhost:8000/api/docs/
-- **Admin**: http://localhost:8000/admin/
-
-> 📖 Para instalación completa, troubleshooting y detalles técnicos, consulta [DEVELOPMENT.md](DEVELOPMENT.md)
-
 ## 🚀 Comandos de Producción
 
 > 📖 Para comandos de gestión de Docker, troubleshooting y diagnóstico, consulta [DEVELOPMENT.md](DEVELOPMENT.md)
@@ -63,7 +38,7 @@ python scripts_utils/manage_dev.py run
 ### Configuración Base
 ```bash
 # URL base de producción
-BASE_URL="http://185.218.124.154:8000"
+BASE_URL="https://minierp.rbnetto.dev"
 
 # Headers comunes
 HEADERS="-H 'Content-Type: application/json'"
@@ -82,34 +57,6 @@ curl -v $BASE_URL/api/inventory/products/
 
 # 4. Probar admin de Django
 curl -v $BASE_URL/admin/
-```
-
-### Diagnóstico Rápido
-```bash
-# Verificar configuración de red
-curl -v $BASE_URL/api/docs/ 2>&1 | grep -E "(HTTP|Connected|Failed)"
-
-# Verificar si el puerto está abierto
-telnet 185.218.124.154 8000
-
-# Diagnóstico de autenticación
-echo "=== DIAGNÓSTICO DE AUTENTICACIÓN ==="
-echo "1. Verificando documentación de la API..."
-curl -s -o /dev/null -w "%{http_code}" $BASE_URL/api/docs/
-
-echo -e "\n2. Verificando endpoint de login..."
-curl -s -o /dev/null -w "%{http_code}" -X POST $BASE_URL/api/users/users/login/ \
-  -H 'Content-Type: application/json' \
-  -d '{"email": "test@test.com", "password": "test"}'
-
-echo -e "\n3. Verificando endpoint de productos (sin auth)..."
-curl -s -o /dev/null -w "%{http_code}" $BASE_URL/api/inventory/products/
-
-echo -e "\n4. Verificando admin de Django..."
-curl -s -o /dev/null -w "%{http_code}" $BASE_URL/admin/
-
-echo -e "\n=== FIN DEL DIAGNÓSTICO ==="
-```
 
 ### Autenticación
 ```bash
@@ -256,7 +203,7 @@ curl -X GET $BASE_URL/api/reports/inventory_report/ \
 
 
 ### Notas Importantes
-- **URL de Producción**: `http://185.218.124.154:8000` (fija para todas las pruebas)
+- **URL de Producción**: `https://minierp.rbnetto.dev` (fija para todas las pruebas)
 - **Reemplaza `$TOKEN`** con el token obtenido del login
 - **Instala `jq`** para mejor formato de respuesta: `brew install jq` (macOS) o `apt install jq` (Ubuntu)
 - **Los IDs** (como `/1/`) pueden variar según los datos existentes en producción
@@ -326,8 +273,8 @@ for user in User.objects.all():
 ## 📖 Documentación de la API
 
 La documentación completa está disponible públicamente en:
-- **Swagger UI**: http://185.218.124.154:8000/api/docs/
-- **ReDoc**: http://185.218.124.154:8000/api/redoc/
+- **Swagger UI**: https://minierp.rbnetto.dev/api/docs/
+- **ReDoc**: https://minierp.rbnetto.dev/api/redoc/
 
 
 ## 🎯 Casos de Uso para Estudiantes
@@ -369,6 +316,57 @@ La documentación completa está disponible públicamente en:
 - [JWT Authentication](https://django-rest-framework-simplejwt.readthedocs.io/)
 - [Swagger/OpenAPI](https://swagger.io/)
 
+
+### Diagnóstico Rápido
+```bash
+# Verificar configuración de red
+curl -v $BASE_URL/api/docs/ 2>&1 | grep -E "(HTTP|Connected|Failed)"
+
+# Verificar si el puerto está abierto
+telnet minierp.rbnetto.dev 8000
+
+# Diagnóstico de autenticación
+echo "=== DIAGNÓSTICO DE AUTENTICACIÓN ==="
+echo "1. Verificando documentación de la API..."
+curl -s -o /dev/null -w "%{http_code}" $BASE_URL/api/docs/
+
+echo -e "\n2. Verificando endpoint de login..."
+curl -s -o /dev/null -w "%{http_code}" -X POST $BASE_URL/api/users/users/login/ \
+  -H 'Content-Type: application/json' \
+  -d '{"email": "test@test.com", "password": "test"}'
+
+echo -e "\n3. Verificando endpoint de productos (sin auth)..."
+curl -s -o /dev/null -w "%{http_code}" $BASE_URL/api/inventory/products/
+
+echo -e "\n4. Verificando admin de Django..."
+curl -s -o /dev/null -w "%{http_code}" $BASE_URL/admin/
+
+echo -e "\n=== FIN DEL DIAGNÓSTICO ==="
+```
+
+## ⚡ Inicio Rápido (5 minutos)
+### For Development: Clonar y Configurar
+```bash
+git clone <repository-url>
+cd mini-erp
+
+# Crear archivo .env para desarrollo
+cp env.example .env
+
+# Configurar entorno
+python scripts_utils/manage_dev.py setup
+```
+
+### Iniciar Servidor
+```bash
+python scripts_utils/manage_dev.py run
+```
+
+### Acceder a la API
+- **Documentación**: http://localhost:8000/api/docs/
+- **Admin**: http://localhost:8000/admin/
+
+> 📖 Para instalación completa, troubleshooting y detalles técnicos, consulta [DEVELOPMENT.md](DEVELOPMENT.md)
 
 **¡Disfruta desarrollando tu frontend con este Mini ERP! 🚀**
 
