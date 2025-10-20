@@ -90,7 +90,7 @@ $COMPOSE_CMD ps
 
 # Verificar que la aplicación responda
 echo "🔍 Verificando que la aplicación responda..."
-if $COMPOSE_CMD exec -T web curl -f http://localhost:8000/api/health/ > /dev/null 2>&1; then
+if $COMPOSE_CMD exec -T web curl -f http://localhost:8000/api/docs/ > /dev/null 2>&1; then
     echo "✅ Aplicación respondiendo correctamente"
 else
     echo "⚠️  Advertencia: No se pudo verificar el health check (puede que no exista el endpoint)"
