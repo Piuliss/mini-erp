@@ -214,8 +214,6 @@ curl -X GET $BASE_URL/api/reports/inventory_report/ \
 
 ### Credenciales de Prueba
 
-**✅ CONFIRMADO: Las siguientes credenciales funcionan en producción:**
-
 | Usuario | Email | Contraseña | Rol |
 |---------|-------|------------|-----|
 | admin | admin@minierp.com | test123456 | Administrador |
