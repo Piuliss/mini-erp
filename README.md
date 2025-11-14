@@ -59,7 +59,6 @@ curl -v $BASE_URL/api/inventory/products/
 curl -v $BASE_URL/admin/
 
 ### Autenticación
-```bash
 # 1. Login y obtener token
 TOKEN=$(curl -s -X POST $BASE_URL/api/users/users/login/ \
   -H 'Content-Type: application/json' \
