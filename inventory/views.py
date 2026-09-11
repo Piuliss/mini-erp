@@ -79,27 +79,46 @@ class ProductViewSet(viewsets.ModelViewSet):
         Adjust product stock quantity
         """
         product = self.get_object()
-        quantity = request.data.get('quantity', 0)
+        raw_quantity = request.data.get('quantity', 0)
         movement_type = request.data.get('movement_type', 'adjustment')
         reference = request.data.get('reference', '')
         notes = request.data.get('notes', '')
 
-        if not quantity:
+        try:
+            quantity = int(raw_quantity)
+        except (TypeError, ValueError):
             return Response(
-                {'error': 'Quantity is required'}, 
+                {'error': 'Quantity must be a valid integer'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Create stock movement
-        StockMovement.objects.create(
-            product=product,
-            movement_type=movement_type,
-            quantity=abs(quantity),
-            reference=reference,
-            notes=notes,
-            created_by=request.user
-        )
+        if quantity == 0:
+            return Response(
+                {'error': 'Quantity is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
+        allowed_types = {choice[0] for choice in StockMovement.MOVEMENT_TYPES}
+        if movement_type not in allowed_types:
+            return Response(
+                {'error': f'movement_type must be one of: {", ".join(sorted(allowed_types))}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Create stock movement
+            StockMovement.objects.create(
+                product=product,
+                movement_type=movement_type,
+                quantity=abs(quantity),
+                reference=reference,
+                notes=notes,
+                created_by=request.user
+            )
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        product.refresh_from_db()
         serializer = ProductSerializer(product)
         return Response(serializer.data)
 

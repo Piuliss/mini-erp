@@ -2,7 +2,9 @@ from django.shortcuts import render
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Q, Sum, Count, Avg, F
+from django.db.models import Q, Sum, Count, Avg, F, Value
+from django.db.models.functions import Coalesce
+from decimal import Decimal
 from django.utils import timezone
 from datetime import timedelta, datetime
 from users.models import User
@@ -36,14 +38,16 @@ class ReportViewSet(viewsets.ViewSet):
             order_date__gte=this_month
         ).aggregate(total=Sum('total_amount'))['total'] or 0
         
-        # Purchase statistics
+# Purchase statistics
         total_purchases = PurchaseInvoice.objects.aggregate(
-            total=Sum('amount')
+            total=Sum(Coalesce(F('amount'), Value(Decimal('0'))))
         )['total'] or 0
-        
+
         this_month_purchases = PurchaseInvoice.objects.filter(
             invoice_date__gte=this_month
-        ).aggregate(total=Sum('amount'))['total'] or 0
+        ).aggregate(
+            total=Sum(Coalesce(F('amount'), Value(Decimal('0'))))
+        )['total'] or 0
         
         # Inventory statistics
         total_products = Product.objects.filter(is_active=True).count()
@@ -51,9 +55,11 @@ class ReportViewSet(viewsets.ViewSet):
             stock_quantity__lte=F('min_stock_level'),
             is_active=True
         ).count()
-        
+
         total_inventory_value = Product.objects.filter(is_active=True).aggregate(
-            total=Sum(F('stock_quantity') * F('cost_price'))
+            total=Sum(
+                F('stock_quantity') * Coalesce(F('cost_price'), Value(Decimal('0')))
+            )
         )['total'] or 0
         
         # Customer and supplier statistics
@@ -84,7 +90,7 @@ class ReportViewSet(viewsets.ViewSet):
                     {
                         'invoice_number': purchase.invoice_number,
                         'supplier': purchase.supplier.name,
-                        'amount': float(purchase.amount),
+                        'amount': float(purchase.amount or 0),
                         'status': purchase.status
                     } for purchase in recent_purchases
                 ]
@@ -149,14 +155,16 @@ class ReportViewSet(viewsets.ViewSet):
         """
         # Stock levels
         products = Product.objects.filter(is_active=True).annotate(
-            stock_value=F('stock_quantity') * F('cost_price')
+            stock_value=F('stock_quantity') * Coalesce(F('cost_price'), Value(Decimal('0')))
         ).order_by('-stock_value')
-        
+
         # Categories summary
         categories_summary = Category.objects.annotate(
             product_count=Count('products'),
             total_stock=Sum('products__stock_quantity'),
-            total_value=Sum(F('products__stock_quantity') * F('products__cost_price'))
+            total_value=Sum(
+                F('products__stock_quantity') * Coalesce(F('products__cost_price'), Value(Decimal('0')))
+            )
         )
         
         # Low stock products
@@ -175,8 +183,8 @@ class ReportViewSet(viewsets.ViewSet):
                     'name': product.name,
                     'sku': product.sku,
                     'stock_quantity': product.stock_quantity,
-                    'stock_value': float(product.stock_value),
-                    'category': product.category.name
+                    'stock_value': float(product.stock_value or 0),
+                    'category': product.category.name if product.category else None
                 } for product in products
             ],
             'categories_summary': [
@@ -230,36 +238,44 @@ class ReportViewSet(viewsets.ViewSet):
         if end_date:
             purchase_queryset = purchase_queryset.filter(invoice_date__lte=end_date)
         
-        total_costs = purchase_queryset.aggregate(total=Sum('amount'))['total'] or 0
+        total_costs = purchase_queryset.aggregate(
+            total=Sum(Coalesce(F('amount'), Value(Decimal('0'))))
+        )['total'] or 0
         
         # Inventory value
         inventory_value = Product.objects.filter(is_active=True).aggregate(
-            total=Sum(F('stock_quantity') * F('cost_price'))
+            total=Sum(
+                F('stock_quantity') * Coalesce(F('cost_price'), Value(Decimal('0')))
+            )
         )['total'] or 0
-        
-        # Outstanding invoices
+
+        # Outstanding invoices (balance is a model property, not a DB column)
         outstanding_sales = Invoice.objects.filter(
             status__in=['pending', 'partial']
-        ).aggregate(total=Sum('balance'))['total'] or 0
-        
+        ).aggregate(total=Sum(F('amount') - F('paid_amount')))['total'] or 0
+
         outstanding_purchases = PurchaseInvoice.objects.filter(
             status__in=['pending', 'partial']
-        ).aggregate(total=Sum('balance'))['total'] or 0
-        
+        ).aggregate(
+            total=Sum(
+                Coalesce(F('amount'), Value(Decimal('0'))) - F('paid_amount')
+            )
+        )['total'] or 0
+
         # Profit calculation
         gross_profit = total_revenue - total_costs
-        
+
         return Response({
             'revenue': {
                 'total_revenue': float(total_revenue),
                 'outstanding_receivables': float(outstanding_sales)
             },
             'costs': {
-                'total_costs': float(total_costs),
-                'outstanding_payables': float(outstanding_purchases)
+                'total_costs': float(total_costs or 0),
+                'outstanding_payables': float(outstanding_purchases or 0)
             },
             'inventory': {
-                'inventory_value': float(inventory_value)
+                'inventory_value': float(inventory_value or 0)
             },
             'profitability': {
                 'gross_profit': float(gross_profit),

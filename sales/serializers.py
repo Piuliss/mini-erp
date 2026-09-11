@@ -149,9 +149,12 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         sale_order_id = validated_data.pop('sale_order_id')
         sale_order = SaleOrder.objects.get(id=sale_order_id)
-        
+
         return Invoice.objects.create(
             sale_order=sale_order,
             amount=sale_order.total_amount,
             **validated_data
         )
+
+    def to_representation(self, instance):
+        return InvoiceSerializer(instance, context=self.context).data

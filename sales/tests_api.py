@@ -63,3 +63,58 @@ class SaleOrderCreateAPITest(APITestCase):
         }
         response = self.client.post(self.url, payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class InvoicePaymentAPITest(APITestCase):
+    def setUp(self):
+        role = Role.objects.create(name="Administrator")
+        self.user = User.objects.create_user(
+            username="payadmin",
+            email="payadmin@test.com",
+            password="testpass123",
+            role=role,
+        )
+        self.customer = Customer.objects.create(name="Cli", email="cli@test.com")
+        self.order = SaleOrder.objects.create(
+            customer=self.customer,
+            order_date=date.today(),
+            total_amount=Decimal("100.00"),
+            created_by=self.user,
+        )
+        from sales.models import Invoice
+        self.invoice = Invoice.objects.create(
+            sale_order=self.order,
+            invoice_date=date.today(),
+            due_date=date.today(),
+            amount=Decimal("100.00"),
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_record_payment_accepts_string_amount(self):
+        url = reverse("invoice-record-payment", kwargs={"pk": self.invoice.id})
+        response = self.client.post(url, {"amount": "25.50"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.paid_amount, Decimal("25.50"))
+        self.assertEqual(self.invoice.status, "partial")
+
+    def test_create_invoice_returns_id(self):
+        order = SaleOrder.objects.create(
+            customer=self.customer,
+            order_date=date.today(),
+            total_amount=Decimal("40.00"),
+            created_by=self.user,
+        )
+        url = reverse("invoice-list")
+        response = self.client.post(
+            url,
+            {
+                "sale_order_id": order.id,
+                "invoice_date": date.today().isoformat(),
+                "due_date": date.today().isoformat(),
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        self.assertIn("id", response.data)
+        self.assertEqual(Decimal(response.data["amount"]), Decimal("40.00"))

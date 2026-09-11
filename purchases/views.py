@@ -82,12 +82,28 @@ class PurchaseInvoiceViewSet(viewsets.ModelViewSet):
         """
         Mark invoice as paid
         """
+        from decimal import Decimal, InvalidOperation
+
         invoice = self.get_object()
-        paid_amount = request.data.get('paid_amount', invoice.amount)
-        
+        raw_paid = request.data.get('paid_amount', invoice.amount)
+
+        try:
+            paid_amount = Decimal(str(raw_paid)) if raw_paid is not None else Decimal('0')
+        except (InvalidOperation, TypeError, ValueError):
+            return Response(
+                {'error': 'paid_amount must be a valid number'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if paid_amount < 0:
+            return Response(
+                {'error': 'paid_amount must be greater than or equal to 0'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         invoice.paid_amount = paid_amount
         invoice.update_status()
-        
+
         return Response({
             'message': f'Invoice marked as {invoice.status}',
             'status': invoice.status,

@@ -209,25 +209,35 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         """
         Record a payment for an invoice
         """
+        from decimal import Decimal, InvalidOperation
+
         invoice = self.get_object()
-        payment_amount = request.data.get('amount', 0)
-        
-        if payment_amount <= 0:
+        raw_amount = request.data.get('amount', 0)
+
+        try:
+            payment_amount = Decimal(str(raw_amount))
+        except (InvalidOperation, TypeError, ValueError):
             return Response(
-                {'error': 'Payment amount must be greater than 0'}, 
+                {'error': 'Payment amount must be a valid number'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
+        if payment_amount <= 0:
+            return Response(
+                {'error': 'Payment amount must be greater than 0'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         invoice.paid_amount += payment_amount
-        
+
         # Update status
         if invoice.paid_amount >= invoice.amount:
             invoice.status = 'paid'
         elif invoice.paid_amount > 0:
             invoice.status = 'partial'
-        
+
         invoice.save()
-        
+
         return Response(InvoiceSerializer(invoice).data)
 
     @action(detail=False, methods=['get'])

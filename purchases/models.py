@@ -68,7 +68,9 @@ class PurchaseInvoice(models.Model):
     
     def update_status(self):
         """Update invoice status based on paid amount"""
-        if self.paid_amount >= self.amount:
+        if self.amount is None:
+            self.status = 'pending'
+        elif self.paid_amount >= self.amount:
             self.status = 'paid'
         elif self.paid_amount > 0:
             self.status = 'partial'

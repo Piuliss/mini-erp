@@ -52,8 +52,8 @@ schema_view = get_schema_view(
         ```
         
         ## Getting Started:
-        1. Register a new user: `POST /api/users/register/`
-        2. Login to get tokens: `POST /api/users/login/`
+        1. Register a new user: `POST /api/users/users/register/`
+        2. Login to get tokens: `POST /api/users/users/login/`
         3. Use the access token for API requests
         
         ## Sample Data:
