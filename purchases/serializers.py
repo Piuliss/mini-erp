@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 from .models import Supplier, PurchaseInvoice, PurchaseInvoiceItem
 
@@ -36,12 +37,22 @@ class PurchaseInvoiceItemSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'total_price', 'created_at']
 
 
+class PurchaseInvoiceItemCreateSerializer(serializers.Serializer):
+    """
+    Typed payload for purchase invoice line items.
+    Coerces unit_price from string/number to Decimal (avoids qty * str bug).
+    """
+    product = serializers.IntegerField()
+    quantity = serializers.IntegerField(min_value=1)
+    unit_price = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
 class PurchaseInvoiceSerializer(serializers.ModelSerializer):
     """
     Serializer for PurchaseInvoice model
     """
     supplier = SupplierSerializer(read_only=True)
-    supplier_id = serializers.IntegerField(write_only=True)
+    supplier_id = serializers.IntegerField()
     items = PurchaseInvoiceItemSerializer(many=True, read_only=True)
     balance = serializers.ReadOnlyField()
     status_display = serializers.ReadOnlyField(source='get_status_display')
@@ -63,10 +74,7 @@ class PurchaseInvoiceCreateSerializer(serializers.ModelSerializer):
     Serializer for creating purchase invoices with items
     """
     supplier_id = serializers.IntegerField()
-    items = serializers.ListField(
-        child=serializers.DictField(),
-        write_only=True
-    )
+    items = PurchaseInvoiceItemCreateSerializer(many=True)
 
     class Meta:
         model = PurchaseInvoice
@@ -75,25 +83,32 @@ class PurchaseInvoiceCreateSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id']
 
+    def validate_items(self, value):
+        if not value:
+            raise serializers.ValidationError('At least one item is required.')
+        return value
+
     def create(self, validated_data):
         items_data = validated_data.pop('items')
         supplier_id = validated_data.pop('supplier_id')
-        
-        # Create the purchase invoice
-        purchase_invoice = PurchaseInvoice.objects.create(
-            supplier_id=supplier_id,
-            **validated_data
-        )
-        
-        # Create invoice items
-        for item_data in items_data:
-            product_id = item_data.pop('product')
-            PurchaseInvoiceItem.objects.create(
-                invoice=purchase_invoice,
-                product_id=product_id,
-                **item_data
+
+        with transaction.atomic():
+            purchase_invoice = PurchaseInvoice.objects.create(
+                supplier_id=supplier_id,
+                **validated_data
             )
-        
-        # Refresh the invoice to get updated amount
-        purchase_invoice.refresh_from_db()
+
+            for item_data in items_data:
+                PurchaseInvoiceItem.objects.create(
+                    invoice=purchase_invoice,
+                    product_id=item_data['product'],
+                    quantity=item_data['quantity'],
+                    unit_price=item_data['unit_price'],
+                )
+
+            purchase_invoice.refresh_from_db()
+
         return purchase_invoice
+
+    def to_representation(self, instance):
+        return PurchaseInvoiceSerializer(instance, context=self.context).data

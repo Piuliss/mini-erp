@@ -95,14 +95,20 @@ class PurchaseInvoiceItem(models.Model):
         return f"{self.product.name} - {self.quantity}"
 
     def save(self, *args, **kwargs):
-        self.total_price = self.quantity * self.unit_price
+        # Coerce explicitly: qty * str would repeat the string in Python
+        unit_price = (
+            self.unit_price
+            if isinstance(self.unit_price, Decimal)
+            else Decimal(str(self.unit_price))
+        )
+        self.total_price = Decimal(self.quantity) * unit_price
         is_new = self.pk is None
         super().save(*args, **kwargs)
-        
+
         # Update invoice amount
         self.invoice.amount = sum(item.total_price for item in self.invoice.items.all())
         self.invoice.save()
-        
+
         # Update product stock only on creation
         if is_new:
             self.product.stock_quantity += self.quantity

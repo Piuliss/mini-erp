@@ -110,9 +110,15 @@ class SaleOrderItem(models.Model):
         return f"{self.product.name} - {self.quantity}"
 
     def save(self, *args, **kwargs):
-        self.total_price = self.quantity * self.unit_price
+        # Coerce explicitly: qty * str would repeat the string in Python
+        unit_price = (
+            self.unit_price
+            if isinstance(self.unit_price, Decimal)
+            else Decimal(str(self.unit_price))
+        )
+        self.total_price = Decimal(self.quantity) * unit_price
         super().save(*args, **kwargs)
-        
+
         # Update order totals
         self.order.calculate_totals()
 

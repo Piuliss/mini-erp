@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 from .models import Customer, SaleOrder, SaleOrderItem, Invoice
 
@@ -36,12 +37,22 @@ class SaleOrderItemSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'total_price', 'created_at']
 
 
+class SaleOrderItemCreateSerializer(serializers.Serializer):
+    """
+    Typed payload for sale order line items.
+    Coerces unit_price from string/number to Decimal (avoids qty * str bug).
+    """
+    product = serializers.IntegerField()
+    quantity = serializers.IntegerField(min_value=1)
+    unit_price = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
 class SaleOrderSerializer(serializers.ModelSerializer):
     """
     Serializer for SaleOrder model
     """
     customer = CustomerSerializer(read_only=True)
-    customer_id = serializers.IntegerField(write_only=True)
+    customer_id = serializers.IntegerField()
     items = SaleOrderItemSerializer(many=True, read_only=True)
     created_by_name = serializers.ReadOnlyField(source='created_by.full_name')
     status_display = serializers.ReadOnlyField(source='get_status_display')
@@ -64,10 +75,7 @@ class SaleOrderCreateSerializer(serializers.ModelSerializer):
     Serializer for creating sale orders with items
     """
     customer_id = serializers.IntegerField()
-    items = serializers.ListField(
-        child=serializers.DictField(),
-        write_only=True
-    )
+    items = SaleOrderItemCreateSerializer(many=True)
 
     class Meta:
         model = SaleOrder
@@ -76,27 +84,34 @@ class SaleOrderCreateSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id']
 
+    def validate_items(self, value):
+        if not value:
+            raise serializers.ValidationError('At least one item is required.')
+        return value
+
     def create(self, validated_data):
         items_data = validated_data.pop('items')
         customer_id = validated_data.pop('customer_id')
-        
-        # Create the sale order
-        sale_order = SaleOrder.objects.create(
-            customer_id=customer_id,
-            created_by=self.context['request'].user,
-            **validated_data
-        )
-        
-        # Create order items
-        for item_data in items_data:
-            product_id = item_data.pop('product')
-            SaleOrderItem.objects.create(
-                order=sale_order,
-                product_id=product_id,
-                **item_data
+
+        with transaction.atomic():
+            sale_order = SaleOrder.objects.create(
+                customer_id=customer_id,
+                created_by=self.context['request'].user,
+                **validated_data
             )
-        
+
+            for item_data in items_data:
+                SaleOrderItem.objects.create(
+                    order=sale_order,
+                    product_id=item_data['product'],
+                    quantity=item_data['quantity'],
+                    unit_price=item_data['unit_price'],
+                )
+
         return sale_order
+
+    def to_representation(self, instance):
+        return SaleOrderSerializer(instance, context=self.context).data
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
